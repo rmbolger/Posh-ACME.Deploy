@@ -6,7 +6,7 @@ function Set-RDSHCertificate {
         [string]$CertThumbprint,
         [Parameter(Position=1,ValueFromPipelineByPropertyName)]
         [string]$PfxFile,
-        [Parameter(Position=2)]
+        [Parameter(Position=2,ValueFromPipelineByPropertyName)]
         [securestring]$PfxPass,
         [string]$TerminalName='RDP-tcp',
         [switch]$RemoveOldCert

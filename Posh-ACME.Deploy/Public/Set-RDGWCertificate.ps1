@@ -6,7 +6,7 @@ function Set-RDGWCertificate {
         [string]$CertThumbprint,
         [Parameter(Position=1,ValueFromPipelineByPropertyName)]
         [string]$PfxFile,
-        [Parameter(Position=2)]
+        [Parameter(Position=2,ValueFromPipelineByPropertyName)]
         [securestring]$PfxPass,
         [switch]$NoRestartService,
         [switch]$RemoveOldCert
@@ -15,15 +15,17 @@ function Set-RDGWCertificate {
     Process {
 
         # make sure the RDS module is available
-        if (!(Get-Module -ListAvailable RemoteDesktopServices)) {
+        if (!(Get-Module -ListAvailable RemoteDesktopServices -Verbose:$false)) {
             throw "The RemoteDesktopServices module is required to use this function."
+        } else {
+            Import-Module RemoteDesktopServices -Verbose:$false
         }
 
         # install the cert if necessary
         if (!(Test-CertInstalled $CertThumbprint)) {
             if ($PfxFile) {
                 $PfxFile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($PfxFile)
-                Import-PfxCertInternal $PfxFile -PfxPass $PfxPass
+                Import-PfxCertInternal $PfxFile -PfxPass $PfxPass -EA Stop
             } else {
                 throw "Certificate thumbprint not found and PfxFile not specified."
             }
@@ -34,22 +36,26 @@ function Set-RDGWCertificate {
 
         if ($oldThumb -ne $CertThumbprint) {
 
-            # set the new value
-            Write-Verbose "Setting new RDGW thumbprint value"
-            Set-Item RDS:\GatewayServer\SSLCertificate\Thumbprint -Value $CertThumbprint -Verbose:$false
+            try {
 
-            # restart the service unless specified
-            if (!$NoRestartService) {
-                Write-Verbose "Restarting TSGateway service"
-                Restart-Service TSGateway
-            }
+                # set the new value
+                Write-Verbose "Setting new RDGW thumbprint value"
+                Set-Item RDS:\GatewayServer\SSLCertificate\Thumbprint -Value $CertThumbprint -EA Stop -Verbose:$false
 
-            # remove the old cert if specified
-            if ($RemoveOldCert) {
-                Write-Verbose "Deleting old certificate"
-                $oldCert = $allCerts | Where-Object {$_.Thumbprint -eq $oldThumb}
-                if ($oldCert) { $oldCert | Remove-Item }
-            }
+                # restart the service unless specified
+                if (!$NoRestartService) {
+                    Write-Verbose "Restarting TSGateway service"
+                    Restart-Service TSGateway
+                }
+
+                # remove the old cert if specified
+                if ($RemoveOldCert) {
+                    Write-Verbose "Deleting old certificate"
+                    $oldCert = Get-ChildItem Cert:\LocalMachine\My | Where-Object {$_.Thumbprint -eq $oldThumb}
+                    if ($oldCert) { $oldCert | Remove-Item }
+                }
+
+            } catch { throw }
 
         } else {
             Write-Warning "Specified certificate is already configured for RDP Gateway"
