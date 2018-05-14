@@ -23,7 +23,7 @@ DotNetFrameworkVersion = '4.7.1'
 # ProcessorArchitecture = ''
 
 # Modules that must be imported into the global environment prior to importing this module
-RequiredModules = @('Posh-ACME')
+#RequiredModules = @()
 
 # Assemblies that must be loaded prior to importing this module
 #RequiredAssemblies = @()
