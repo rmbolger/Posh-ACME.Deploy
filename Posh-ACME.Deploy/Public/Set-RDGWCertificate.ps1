@@ -32,15 +32,18 @@ function Set-RDGWCertificate {
         if ($oldThumb -ne $CertThumbprint) {
 
             # set the new value
-            Set-Item RDS:\GatewayServer\SSLCertificate\Thumbprint -Value $CertThumbprint
+            Write-Verbose "Setting new RDGW thumbprint value"
+            Set-Item RDS:\GatewayServer\SSLCertificate\Thumbprint -Value $CertThumbprint -Verbose:$false
 
             # restart the service unless specified
             if (!$NoRestartService) {
+                Write-Verbose "Restarting TSGateway service"
                 Restart-Service TSGateway
             }
 
             # remove the old cert if specified
             if ($RemoveOldCert) {
+                Write-Verbose "Deleting old certificate"
                 $oldCert = $allCerts | Where-Object {$_.Thumbprint -eq $oldThumb}
                 if ($oldCert) { $oldCert | Remove-Item }
             }
