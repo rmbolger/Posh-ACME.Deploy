@@ -1,4 +1,4 @@
-function Set-RDPCertificate {
+function Set-RDSHCertificate {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory,Position=0,ValueFromPipelineByPropertyName)]
@@ -14,22 +14,14 @@ function Set-RDPCertificate {
 
     Process {
 
-        # check whether the cert is already in the computer's store
-        # based on the thumbprint
-        $allCerts = Get-ChildItem Cert:\LocalMachine\My
-        if (!($allCerts | Where-Object {$_.Thumbprint -eq $CertThumbprint})) {
-            if (!$PfxFile) {
+        # install the cert if necessary
+        if (!(Test-CertInstalled $CertThumbprint)) {
+            if ($PfxFile) {
+                $PfxFile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($PfxFile)
+                Import-PfxCertInternal $PfxFile -PfxPass $PfxPass
+            } else {
                 throw "Certificate thumbprint not found and PfxFile not specified."
             }
-
-            $PfxFile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($PfxFile)
-            if (!(Test-Path $PfxFile -PathType Leaf)) {
-                throw "Certificate thumbprint not found and specified PfxFile not found: $PfxFile"
-            }
-
-            # install it
-            Write-Verbose "Importing PFX certificate"
-            Import-PfxCertInternal $PfxFile -PfxPass $PfxPass
         }
 
         # get a reference to the RDP config
@@ -83,12 +75,12 @@ function Set-RDPCertificate {
         If specified, the old certificate associated with RDP will be deleted from the local system's Personal certificate store. Ignored if the old certificate has already been removed or otherwise can't be found.
 
     .EXAMPLE
-        New-PACertificate site1.example.com | Set-RDPCertificate
+        New-PACertificate site1.example.com | Set-RDSHCertificate
 
         Create a new certificate and configure it for RDP on this system.
 
     .EXAMPLE
-        Submit-Renewal site1.example.com | Set-RDPCertificate
+        Submit-Renewal site1.example.com | Set-RDSHCertificate
 
         Create a new certificate and configure it for RDP on this system.
 
