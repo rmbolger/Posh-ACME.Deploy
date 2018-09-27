@@ -35,7 +35,7 @@ function Set-RDSHCertificate {
 
             # set the new one
             Write-Verbose "Setting $TerminalName certificate thumbprint to $CertThumbprint"
-            Set-WmiInstance -Path $ts.__path -Argument @{SSLCertificateSHA1Hash=$CertThumbprint} | Out-Null
+            Set-WmiInstance -Path $ts.__path -Argument @{SSLCertificateSHA1Hash='$CertThumbprint'} | Out-Null
 
             # remove the old cert if specified
             if ($RemoveOldCert) {
