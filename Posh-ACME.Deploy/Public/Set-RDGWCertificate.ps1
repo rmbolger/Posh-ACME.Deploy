@@ -49,11 +49,7 @@ function Set-RDGWCertificate {
                 }
 
                 # remove the old cert if specified
-                if ($RemoveOldCert) {
-                    Write-Verbose "Deleting old certificate"
-                    $oldCert = Get-ChildItem Cert:\LocalMachine\My | Where-Object {$_.Thumbprint -eq $oldThumb}
-                    if ($oldCert) { $oldCert | Remove-Item }
-                }
+                if ($RemoveOldCert) { Remove-OldCert $oldThumb }
 
             } catch { throw }
 

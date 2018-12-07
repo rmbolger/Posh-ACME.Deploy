@@ -38,10 +38,8 @@ function Set-RDSHCertificate {
             Set-WmiInstance -Path $ts.__path -Argument @{SSLCertificateSHA1Hash=$CertThumbprint} | Out-Null
 
             # remove the old cert if specified
-            if ($RemoveOldCert) {
-                $oldCert = $allCerts | Where-Object {$_.Thumbprint -eq $oldThumb}
-                if ($oldCert) { $oldCert | Remove-Item }
-            }
+            if ($RemoveOldCert) { Remove-OldCert $oldThumb }
+
         } else {
             Write-Warning "Specified certificate is already configured for RDP terminal $TerminalName"
         }
