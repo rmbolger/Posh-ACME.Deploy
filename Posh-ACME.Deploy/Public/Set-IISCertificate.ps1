@@ -137,12 +137,13 @@ function Set-IISCertificate {
         # check if ssl binding already exists
         if ($binding = $sslBindings | Where-Object { $_.PSChildName -eq $sslMatch }) {
 
-            if ($binding.Thumbprint -eq $CertThumbprint) {
+            # save the old thumbprint for potential deleting later
+            $oldThumb = $binding.Thumbprint
+
+            if ($oldThumb -eq $CertThumbprint) {
                 Write-Verbose "SSL binding already exists for $sslMatch"
             } else {
-                #Write-Verbose "Updating $sslMatch thumbprint from $($binding.Thumbprint) to $($cert.Thumbprint)"
                 Write-Verbose "Removing old thumbprint from $sslMatch thumbprint"
-                #$cert = Set-Item -Path IIS:\SslBindings\$sslMatch
                 # Could never get Set-Item to work directly, always kept throwing param errors
                 # So instead, we'll delete and re-create
                 Get-Item IIS:\SslBindings\$sslMatch | Remove-Item
@@ -157,6 +158,13 @@ function Set-IISCertificate {
                 $cert | New-Item IIS:\SslBindings\$sslMatch -SslFlags $sslFlags | Out-Null
             } else {
                 $cert | New-Item IIS:\SslBindings\$sslMatch | Out-Null
+            }
+
+            # remove the old cert if specified
+            if ($RemoveOldCert) {
+                Write-Verbose "Deleting old certificate"
+                $oldCert = Get-ChildItem Cert:\LocalMachine\My | Where-Object {$_.Thumbprint -eq $oldThumb}
+                if ($oldCert) { $oldCert | Remove-Item }
             }
         }
 
