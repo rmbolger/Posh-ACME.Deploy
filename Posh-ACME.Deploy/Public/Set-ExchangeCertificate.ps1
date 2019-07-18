@@ -24,7 +24,7 @@ function Set-ExchangeCertificate {
                     $_.Name -match "E2010" -or
                     $_.Name -match "SnapIn"
                 )
-            } | Add-PSSnapin -ErrorAction SilentlyContinue
+            } | Add-PSSnapin -EA SilentlyContinue
         }
 
         # install the cert if necessary
