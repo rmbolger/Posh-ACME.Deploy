@@ -14,7 +14,7 @@ function Set-ExchangeCertificate {
 
     Process {
 
-        # make sure the RDS module is available
+        # make sure the Exchange snapin is available
         if (!(Get-PSSnapin | Where-Object { $_.Name -match "Microsoft.Exchange.Management.PowerShell" })) {
             throw "The Microsoft.Exchange.Management.PowerShell snapin is required to use this function."
         } else {
