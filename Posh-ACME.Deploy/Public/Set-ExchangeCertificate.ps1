@@ -18,7 +18,6 @@ function Set-ExchangeCertificate {
         if (!(Get-PSSnapin | Where-Object { $_.Name -match "Microsoft.Exchange.Management.PowerShell" })) {
             throw "The Microsoft.Exchange.Management.PowerShell snapin is required to use this function."
         } else {
-            Import-Module RemoteDesktopServices
             Get-PSSnapin -Registered | Where-Object {
                 $_.Name -match "Microsoft.Exchange.Management.PowerShell" -and (
                     $_.Name -match "Admin" -or
