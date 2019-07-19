@@ -8,7 +8,7 @@ function Set-ExchangeCertificate {
         [string]$PfxFile,
         [Parameter(Position=2,ValueFromPipelineByPropertyName)]
         [securestring]$PfxPass,
-        [string]$ExchangeServices='IIS,SMTP',
+        [string[]]$ExchangeServices=@('IIS','SMTP'),
         [switch]$RemoveOldCert
     )
 
@@ -38,9 +38,12 @@ function Set-ExchangeCertificate {
         }
 
         # check the old thumbprint value
-        $oldThumb = (Get-ExchangeCertificate).Thumbprint
+        $oldThumbs = ($ExchangeServices | ForEach-Object {
+            $service = $_
+                (Get-ExchangeCertificate | Where-Object { $service -in ($_.Services -split ', ') }).Thumbprint
+        } | Sort-Object -Unique)
 
-        if ($oldThumb -notcontains $CertThumbprint) {
+        if ($oldThumbs -notcontains $CertThumbprint) {
 
             try {
 
@@ -49,7 +52,7 @@ function Set-ExchangeCertificate {
                 Enable-ExchangeCertificate -Services $ExchangeServices -Thumbprint $CertThumbprint -Force -EA Stop -Verbose:$false
 
                 # remove the old cert if specified
-                if ($RemoveOldCert) { Remove-OldCert $oldThumb }
+                if ($RemoveOldCert) { Remove-OldCert $oldThumbs }
 
             } catch { throw }
 
