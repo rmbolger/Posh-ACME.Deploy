@@ -5,7 +5,7 @@ if ('PSEdition' -notin $PSVersionTable.Keys -or $PSVersionTable.PSEdition -eq 'D
     $installpath = "$($env:USERPROFILE)\Documents\WindowsPowerShell\Modules"
 } else {
     if ($IsWindows) {
-        $installpath = "$($env:HOME)\Documents\PowerShell\Modules"
+        $installpath = "$($env:USERPROFILE)\Documents\PowerShell\Modules"
     } else {
         $installpath = "$($env:HOME)/.local/share/powershell/Modules"
     }
@@ -37,15 +37,15 @@ if ([String]::IsNullOrWhiteSpace($PSScriptRoot)) {
     Expand-Archive $file -DestinationPath $installpath
 
     Write-Host "Removing any old copy" -ForegroundColor Cyan
-    Remove-Item "$installpath\Posh-ACME.Deploy" -Recurse -Force -EA SilentlyContinue
+    Remove-Item "$installpath\Posh-ACME.Deploy" -Recurse -Force -EA Ignore
     Write-Host "Renaming folder" -ForegroundColor Cyan
-    Copy-Item "$installpath\Posh-ACME.Deploy-master\Posh-ACME.Deploy" $installpath -Recurse -Force
+    Copy-Item "$installpath\Posh-ACME.Deploy-master\Posh-ACME.Deploy" $installpath -Recurse -Force -EA Continue
     Remove-Item "$installpath\Posh-ACME.Deploy-master" -recurse -confirm:$false
     Import-Module -Name Posh-ACME.Deploy -Force
 } else {
     # running locally
-    Remove-Item "$installpath\Posh-ACME.Deploy" -Recurse -Force -EA SilentlyContinue
-    Copy-Item "$PSScriptRoot\Posh-ACME.Deploy" $installpath -Recurse -Force
+    Remove-Item "$installpath\Posh-ACME.Deploy" -Recurse -Force -EA Ignore
+    Copy-Item "$PSScriptRoot\Posh-ACME.Deploy" $installpath -Recurse -Force -EA Continue
     # force re-load the module (assuming you're editing locally and want to see changes)
     Import-Module -Name Posh-ACME.Deploy -Force
 }
