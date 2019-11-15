@@ -25,7 +25,12 @@ function Set-RDSHCertificate {
         }
 
         # get a reference to the RDP config
-        $ts = Get-WmiObject -class 'Win32_TSGeneralSetting' -Namespace 'root\cimv2\terminalservices' -Filter "TerminalName='$TerminalName'"
+        $cimParams = @{
+            ClassName = 'Win32_TSGeneralSetting'
+            Namespace = 'root\cimv2\terminalservices'
+            Filter = "TerminalName='$TerminalName'"
+        }
+        $ts = Get-CimInstance @cimParams
 
         # update the cert thumbprint if it's different
         if ($CertThumbprint -ne $ts.SSLCertificateSHA1Hash) {
@@ -35,7 +40,8 @@ function Set-RDSHCertificate {
 
             # set the new one
             Write-Verbose "Setting $TerminalName certificate thumbprint to $CertThumbprint"
-            Set-WmiInstance -Path $ts.__path -Argument @{SSLCertificateSHA1Hash=$CertThumbprint} | Out-Null
+            $ts.SSLCertificateSHA1Hash = $CertThumbprint
+            $ts | Set-CimInstance -EA Stop
 
             # remove the old cert if specified
             if ($RemoveOldCert) { Remove-OldCert $oldThumb }
