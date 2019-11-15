@@ -13,6 +13,3 @@ Foreach($import in @($Public + $Private))
         Write-Error -Message "Failed to import function $($import.fullname): $_"
     }
 }
-
-# Export everything in the public folder
-Export-ModuleMember -Function $Public.Basename

@@ -10,8 +10,11 @@ CompatiblePSEditions = 'Desktop'
 PowerShellVersion = '5.1'
 DotNetFrameworkVersion = '4.7.1'
 
-FunctionsToExport = '*' #@(
-#)
+FunctionsToExport = @(
+    'Set-IISCertificate'
+    'Set-RDGWCertificate'
+    'Set-RDSHCertificate'
+)
 CmdletsToExport = @()
 VariablesToExport = @()
 AliasesToExport = @()
