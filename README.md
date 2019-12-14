@@ -13,7 +13,7 @@ A Collection of certificate deployment functions intended for use with [Posh-ACM
 
 ## Release
 
-*(When released)* The [latest release version](https://www.powershellgallery.com/packages/Posh-ACME.Deploy) can found in the PowerShell Gallery. Installing from the gallery requires the PowerShellGet module which is installed by default on Windows 10 or later and all versions of PowerShell Core. See [Getting Started with the Gallery](https://www.powershellgallery.com/) for instructions on earlier OSes. Zip/Tar versions can also be downloaded from the [GitHub releases page](https://github.com/rmbolger/Posh-ACME.Deploy/releases).
+The [latest release version](https://www.powershellgallery.com/packages/Posh-ACME.Deploy/) can found in the PowerShell Gallery. Installing from the gallery requires the PowerShellGet module which is installed by default on Windows 10 or later and all versions of PowerShell Core. See [Getting Started with the Gallery](https://www.powershellgallery.com/) for instructions on earlier OSes. Zip/Tar versions can also be downloaded from the [GitHub releases page](https://github.com/rmbolger/Posh-ACME.Deploy/releases).
 
 
 ```powershell
