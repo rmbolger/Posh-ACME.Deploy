@@ -62,7 +62,7 @@ The rest of the functions in this module work very similarly. Check the associat
 
 # Requirements and Platform Support
 
-All of the currently included functions are tied to Windows services and related modules. Generally, you should have Windows PowerShell 5.1 or later (Desktop edition) with .NET Framework 4.7.1** or later which are the same minimum requirements as Posh-ACME.
+All of the currently included functions are tied to Windows services and related modules. Generally, you should have Windows PowerShell 5.1 or later (Desktop edition) with .NET Framework 4.7.1 or later which are the same minimum requirements as Posh-ACME.
 
 PowerShell Core support will be dependent on the specific function you're using and whether any dependent modules (WebAdministration, RemoteDesktopServices, etc) are compatible.
 
