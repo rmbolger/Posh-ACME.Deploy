@@ -13,25 +13,23 @@ A Collection of certificate deployment functions intended for use with [Posh-ACM
 
 ## Release
 
-The [latest release version](https://www.powershellgallery.com/packages/Posh-ACME.Deploy/) can found in the PowerShell Gallery. Installing from the gallery requires the PowerShellGet module which is installed by default on Windows 10 or later and all versions of PowerShell Core. See [Getting Started with the Gallery](https://www.powershellgallery.com/) for instructions on earlier OSes. Zip/Tar versions can also be downloaded from the [GitHub releases page](https://github.com/rmbolger/Posh-ACME.Deploy/releases).
-
+The latest release version can found in the [PowerShell Gallery](https://www.powershellgallery.com/packages/Posh-ACME.Deploy/) or the [GitHub releases page](https://github.com/rmbolger/Posh-ACME.Deploy/releases). Installing from the gallery is easiest using `Install-Module` from the PowerShellGet module. See [Installing PowerShellGet](https://docs.microsoft.com/en-us/powershell/scripting/gallery/installing-psget) if you don't already have it installed.
 
 ```powershell
 # install for all users (requires elevated privs)
-Install-Module Posh-ACME.Deploy -Scope AllUsers
+Install-Module -Name Posh-ACME.Deploy -Scope AllUsers
 
 # install for current user
-Install-Module Posh-ACME.Deploy -Scope CurrentUser
+Install-Module -Name Posh-ACME.Deploy -Scope CurrentUser
 ```
+
+*NOTE: If you use PowerShell 5.1 or earlier, `Install-Module` may throw an error depending on your Windows and .NET version due to a change PowerShell Gallery made to their TLS settings. For more info and a workaround, see the [official blog post](https://devblogs.microsoft.com/powershell/powershell-gallery-tls-support/).*
 
 ## Development
 
-To install the latest *development* version from the git master branch, use the following PowerShell command. This method assumes a default PowerShell environment that includes the [`PSModulePath`](https://msdn.microsoft.com/en-us/library/dd878326.aspx) environment variable. You must also make sure `Get-ExecutionPolicy` does not return `Restricted` or `AllSigned`.
+To install the latest *development* version from the git master branch, use the following PowerShell command. This method assumes a default [`PSModulePath`](https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_psmodulepath) environment variable.
 
 ```powershell
-# (optional) set less restrictive execution policy
-Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
-
 # install latest dev version
 iex (irm https://raw.githubusercontent.com/rmbolger/Posh-ACME.Deploy/master/instdev.ps1)
 ```
