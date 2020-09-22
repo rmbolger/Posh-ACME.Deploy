@@ -30,7 +30,7 @@ PrivateData = @{
         Tags = 'LetsEncrypt','ssl','tls','certificates','acme','powershell','posh-acme'
 
         # A URL to the license for this module.
-        LicenseUri = 'https://github.com/rmbolger/Posh-ACME.Deploy/blob/master/LICENSE'
+        LicenseUri = 'https://github.com/rmbolger/Posh-ACME.Deploy/blob/main/LICENSE'
 
         # A URL to the main website for this project.
         ProjectUri = 'https://github.com/rmbolger/Posh-ACME.Deploy'

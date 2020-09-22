@@ -28,11 +28,11 @@ Install-Module -Name Posh-ACME.Deploy -Scope CurrentUser
 
 ## Development
 
-To install the latest *development* version from the git master branch, use the following PowerShell command. This method assumes a default [`PSModulePath`](https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_psmodulepath) environment variable.
+To install the latest *development* version from the git main branch, use the following PowerShell command. This method assumes a default [`PSModulePath`](https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_psmodulepath) environment variable.
 
 ```powershell
 # install latest dev version
-iex (irm https://raw.githubusercontent.com/rmbolger/Posh-ACME.Deploy/master/instdev.ps1)
+iex (irm https://raw.githubusercontent.com/rmbolger/Posh-ACME.Deploy/main/instdev.ps1)
 ```
 
 # Quick Start
