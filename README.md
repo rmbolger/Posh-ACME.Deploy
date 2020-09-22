@@ -8,6 +8,7 @@ A Collection of certificate deployment functions intended for use with [Posh-ACM
 - Remote Desktop Session Host
 - Remote Desktop Gateway
 - WinRM
+- Exchange (tested on 2019)
 
 # Install
 
