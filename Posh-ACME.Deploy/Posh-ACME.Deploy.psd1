@@ -13,6 +13,7 @@ DotNetFrameworkVersion = '4.7.1'
 FunctionsToExport = @(
     'Set-ExchangeCertificate'
     'Set-IISCertificate'
+    'Set-IISFTPCertificate'
     'Set-RDGWCertificate'
     'Set-RDSHCertificate'
     'Set-WinRMCertificate'
