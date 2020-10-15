@@ -5,6 +5,7 @@ A Collection of certificate deployment functions intended for use with [Posh-ACM
 # Supported Deployment Targets
 
 - IIS 7.0+
+- IIS FTP services
 - Remote Desktop Session Host
 - Remote Desktop Gateway
 - WinRM

@@ -1,7 +1,7 @@
 @{
 
 RootModule = 'Posh-ACME.Deploy.psm1'
-ModuleVersion = '1.1.0'
+ModuleVersion = '1.2.0'
 GUID = '79819e0a-30db-4742-bcc4-0c956273db51'
 Author = 'Ryan Bolger'
 Copyright = '(c) 2018 Ryan Bolger. All rights reserved.'
@@ -41,9 +41,9 @@ PrivateData = @{
 
         # ReleaseNotes of this module
         ReleaseNotes = @'
-## 1.1.0 (2020-06-24)
+## 1.2.0 (2020-10-15)
 
-* Added Set-ExchangeCertificate
+* Added Set-IISFTPCertificate
 '@
 
     } # End of PSData hashtable
