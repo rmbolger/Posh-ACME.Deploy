@@ -19,14 +19,14 @@ function Set-IISCertificate {
     Process {
 
         # make sure the WebAdministration module is available
-        if (!(Get-Module -ListAvailable WebAdministration -Verbose:$false)) {
+        if (-not (Get-Module -ListAvailable WebAdministration -Verbose:$false)) {
             throw "The WebAdministration module is required to use this function."
         } else {
             Import-Module WebAdministration -Verbose:$false
         }
 
         # install the cert if necessary
-        if (!(Test-CertInstalled $CertThumbprint)) {
+        if (-not (Test-CertInstalled $CertThumbprint)) {
             if ($PfxFile) {
                 $PfxFile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($PfxFile)
                 Import-PfxCertInternal $PfxFile -PfxPass $PfxPass
@@ -38,8 +38,8 @@ function Set-IISCertificate {
         # HostHeader with SSL is only supported on IIS versions with SNI support which is IIS 8+. So throw an error
         # if they specified one and we can't use it.
         $SupportSNI = ((Get-ItemProperty HKLM:\SOFTWARE\Microsoft\InetStp).MajorVersion -ge 8)
-        if (!([string]::IsNullOrWhiteSpace($HostHeader))) {
-            if (!$SupportSNI) {
+        if (-not ([string]::IsNullOrWhiteSpace($HostHeader))) {
+            if (-not $SupportSNI) {
                 throw "Host Headers for SSL/TLS bindings are only supported on IIS 8.0 or higher."
             }
         } elseif ($RequireSNI) {
@@ -48,8 +48,7 @@ function Set-IISCertificate {
         }
 
         # verify the site exists
-        $sitePath = "IIS:\Sites\$SiteName"
-        if (!($site = Get-Item $sitePath -EA SilentlyContinue)) {
+        if (-not (Get-WebSite -Name $SiteName)) {
             throw "Site $SiteName not found."
         }
 
@@ -57,32 +56,24 @@ function Set-IISCertificate {
         if ($RequireSNI) { $sslFlags = 1 }
 
         # check for an existing site binding
-        $bindings = $site.bindings
         $bindMatch = "$($IPAddress):$($Port):$($HostHeader)"
-        if ($bindings.Collection | Where-Object {$_.protocol -eq 'https' -and $_.bindingInformation -eq $bindMatch }) {
+        $binding = Get-WebBinding -Name $SiteName -Protocol 'https' | Where-Object {
+            $_.bindingInformation -eq $bindMatch
+        }
+        if ($binding) {
 
             # we've got a match on the binding string, but now we have to make sure the sslFlags value
             # also matches. But sslFlags only exists on IIS 8+, so don't bother checking on earlier versions
             if ($SupportSNI) {
 
-                # if sslFlags is different, we need to update the value via the index on the binding
-                # collection, so we'll just loop through all of them
-                for ($i=0; $i -lt $bindings.Collection.Count; $i++) {
-                    $b = $bindings.Collection[$i]
-                    if ($b.bindingInformation -eq $bindMatch) {
-                        if ($b.sslFlags -ne $sslFlags) {
-                            # update the sslFlags value and write the whole binding collection
-                            # back to IIS
-                            $b.sslFlags = $sslFlags
-                            Write-Verbose "Updating sslFlags on binding $bindMatch"
-                            Set-ItemProperty $sitePath -Name Bindings -Value $bindings
-
-                        } else {
-                            Write-Verbose "IIS Binding already exists for $bindMatch"
-                        }
-                        break
-                    }
+                # update the value if it doesn't match
+                if ($binding.sslFlags -ne $sslFlags) {
+                    Write-Verbose "Updating sslFlags on binding $bindMatch"
+                    Set-WebBinding -Name $SiteName -BindingInformation $bindMatch -PropertyName sslFlags -Value $sslFlags
+                } else {
+                    Write-Verbose "IIS Binding already exists for $bindMatch"
                 }
+
             } else {
                 Write-Verbose "IIS Binding already exists for $bindMatch"
             }
@@ -90,16 +81,26 @@ function Set-IISCertificate {
         } else {
             # no match
 
-            # create the binding entry we're going to add
-            $bindProps =  @{protocol="https";bindingInformation=$bindMatch;}
-            if ($SupportSNI) { $bindProps.sslFlags = $sslFlags }
+            # build the param splat we'll use with New-WebBinding
+            $newBindingParams = @{
+                Name = $SiteName
+                Protocol = 'https'
+                IPAddress = $IPAddress
+                Port = $Port
+            }
+            if ($HostHeader) {
+                $newBindingParams.HostHeader = $HostHeader
+            }
+            if ($SupportSNI) {
+                $newBindingParams.SslFlags = $sslFlags
+            }
 
             Write-Verbose "Adding new site binding for $bindMatch"
-            New-ItemProperty $sitePath -Name Bindings -Value $bindProps
+            New-WebBinding @newBindingParams
         }
 
         # get a reference to the cert
-        $cert = Get-Item Cert:\LocalMachine\My\$CertThumbprint
+        $cert = Get-ChildItem Cert:\LocalMachine\My | Where-Object { $_.Thumbprint -eq $CertThumbprint }
 
         # get the current ssl binding list
         $sslBindings = Get-ChildItem IIS:\SslBindings | Where-Object { $_.Sites.Value -eq $SiteName }
