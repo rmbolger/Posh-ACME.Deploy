@@ -8,6 +8,7 @@ function Set-NPSCertificate {
       [string]$PfxFile,
       [Parameter(Position=2,ValueFromPipelineByPropertyName)]
       [securestring]$PfxPass,
+      [string]$IASConfigPath = '%SystemRoot%\System32\ias\ias.xml',
       [Parameter(Mandatory=$true)]
       [string]$PolicyName,
       [switch]$RemoveOldCert
@@ -25,7 +26,7 @@ function Set-NPSCertificate {
           }
       }
 
-      [xml]$IASConfig = get-content 'C:\Windows\System32\ias\ias.xml'
+      [xml]$IASConfig = Get-Content ([Environment]::ExpandEnvironmentVariables($IASConfigPath))
 
       $policy = $IASConfig.SelectSingleNode("//RadiusProfiles//*[@name='$PolicyName']")
       
@@ -46,7 +47,7 @@ function Set-NPSCertificate {
         Write-Verbose "Setting $PolicyName certificate thumbprint to $CertThumbprint"
         $policy.Properties.msEAPConfiguration.InnerText = $policy.Properties.msEAPConfiguration.InnerText.SubString(0,72) + $CertThumbprint.ToLower() + $policy.Properties.msEAPConfiguration.InnerText.SubString(112)
         
-        $IASConfig.Save('C:\Windows\System32\ias\ias.xml')
+        $IASConfig.Save([Environment]::ExpandEnvironmentVariables($IASConfigPath))
 
         Restart-Service 'IAS'
         
