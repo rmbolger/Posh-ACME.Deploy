@@ -80,6 +80,9 @@ function Set-NPSCertificate {
   .PARAMETER PfxPass
       The export password for the specified PfxFile parameter. Not required if the Pfx does not require an export password.
 
+  .PARAMETER IASConfigPath
+      The path to the NPS config file you want to edit. Default: %SystemRoot%\System32\ias\ias.xml
+  
   .PARAMETER PolicyName
       The name of the Network Policy.
 
