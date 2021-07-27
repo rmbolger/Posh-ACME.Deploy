@@ -1,3 +1,7 @@
+## 1.3.0 (2021-07-26)
+
+* Added Set-NPSCertificate
+
 ## 1.2.0 (2020-10-15)
 
 * Added Set-IISFTPCertificate
