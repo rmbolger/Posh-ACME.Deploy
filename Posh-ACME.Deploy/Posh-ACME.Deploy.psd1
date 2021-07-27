@@ -18,6 +18,7 @@ FunctionsToExport = @(
     'Set-RDGWCertificate'
     'Set-RDSHCertificate'
     'Set-WinRMCertificate'
+    'Set-NPSCertificate'
 )
 CmdletsToExport = @()
 VariablesToExport = @()
