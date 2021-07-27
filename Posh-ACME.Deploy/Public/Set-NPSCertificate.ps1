@@ -87,7 +87,7 @@ function Set-NPSCertificate {
       The name of the Network Policy.
 
   .PARAMETER RemoveOldCert
-      If specified, the old certificate associated with RDP will be deleted from the local system's Personal certificate store. Ignored if the old certificate has already been removed or otherwise can't be found.
+      If specified, the old certificate associated with the service will be deleted from the local system's Personal certificate store. Ignored if the old certificate has already been removed or otherwise can't be found.
 
   .EXAMPLE
       New-PACertificate site1.example.com | Set-NPSCertificate -PolicyName "Secure Wireless Connections"
