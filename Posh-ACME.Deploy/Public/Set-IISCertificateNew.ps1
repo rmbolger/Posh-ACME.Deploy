@@ -61,7 +61,7 @@ function Set-IISCertificateNew {
 
         # check for an existing site binding
         $bindMatch = "$($IPAddress):$($Port):$($HostHeader)"
-        $binding = (Get-IISSiteBinding -Name $SiteName -Protocol 'https') | Where-Object {
+        $binding = (Get-IISSiteBinding -Name $SiteName -Protocol 'https' -WarningAction 'Ignore') | Where-Object {
             $_.bindingInformation -eq $bindMatch
         }
 
