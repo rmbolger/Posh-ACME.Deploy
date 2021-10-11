@@ -14,17 +14,20 @@ function Set-ExchangeCertificate {
 
     Process {
 
-        # make sure the Exchange snapin is available
-        if (!(Get-PSSnapin | Where-Object { $_.Name -match "Microsoft.Exchange.Management.PowerShell" })) {
+        # make sure the Exchange snapin is available on the local system
+        if (!(Get-PSSnapin -Registered | Where-Object { $_.Name -match "Microsoft.Exchange.Management.PowerShell" })) {
             throw "The Microsoft.Exchange.Management.PowerShell snapin is required to use this function."
         } else {
-            Get-PSSnapin -Registered | Where-Object {
-                $_.Name -match "Microsoft.Exchange.Management.PowerShell" -and (
-                    $_.Name -match "Admin" -or
-                    $_.Name -match "E2010" -or
-                    $_.Name -match "SnapIn"
-                )
-            } | Add-PSSnapin -EA SilentlyContinue
+            # if it's not already loaded
+            if (!(Get-PSSnapin | Where-Object {
+                  $_.Name -match "Microsoft.Exchange.Management.PowerShell" -and (
+                      $_.Name -match "Admin" -or
+                      $_.Name -match "E2010" -or
+                      $_.Name -match "SnapIn"
+                  )
+            })) { # load it
+                 Add-PSSnapin Microsoft.Exchange.Management.PowerShell.SnapIn
+                 }
         }
 
         # install the cert if necessary
