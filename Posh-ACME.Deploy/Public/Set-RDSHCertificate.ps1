@@ -1,7 +1,7 @@
 function Set-RDSHCertificate {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory,Position=0,ValueFromPipelineByPropertyName)]
+        [Parameter(Position=0,ValueFromPipelineByPropertyName)]
         [Alias('Thumbprint')]
         [string]$CertThumbprint,
         [Parameter(Position=1,ValueFromPipelineByPropertyName)]
@@ -14,15 +14,10 @@ function Set-RDSHCertificate {
 
     Process {
 
-        # install the cert if necessary
-        if (!(Test-CertInstalled $CertThumbprint)) {
-            if ($PfxFile) {
-                $PfxFile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($PfxFile)
-                Import-PfxCertInternal $PfxFile -PfxPass $PfxPass
-            } else {
-                throw "Certificate thumbprint not found and PfxFile not specified."
-            }
-        }
+        # surface exceptions without terminating the whole pipeline
+        trap { $PSCmdlet.WriteError($PSItem); return }
+
+        $CertThumbprint = Confirm-CertInstall @PSBoundParameters
 
         # get a reference to the RDP config
         $cimParams = @{

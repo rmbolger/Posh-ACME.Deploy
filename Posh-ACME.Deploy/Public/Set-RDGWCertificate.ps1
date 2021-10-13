@@ -1,7 +1,7 @@
 function Set-RDGWCertificate {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory,Position=0,ValueFromPipelineByPropertyName)]
+        [Parameter(Position=0,ValueFromPipelineByPropertyName)]
         [Alias('Thumbprint')]
         [string]$CertThumbprint,
         [Parameter(Position=1,ValueFromPipelineByPropertyName)]
@@ -12,46 +12,40 @@ function Set-RDGWCertificate {
         [switch]$RemoveOldCert
     )
 
-    Process {
-
+    Begin {
         # make sure the RDS module is available
-        if (!(Get-Module -ListAvailable RemoteDesktopServices -Verbose:$false)) {
-            throw "The RemoteDesktopServices module is required to use this function."
+        if (-not (Get-Module -ListAvailable RemoteDesktopServices -Verbose:$false)) {
+            try { throw "The RemoteDesktopServices module is required to use this function." }
+            catch { $PSCmdlet.ThrowTerminatingError($_) }
         } else {
             Import-Module RemoteDesktopServices -Verbose:$false
         }
+    }
 
-        # install the cert if necessary
-        if (!(Test-CertInstalled $CertThumbprint)) {
-            if ($PfxFile) {
-                $PfxFile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($PfxFile)
-                Import-PfxCertInternal $PfxFile -PfxPass $PfxPass -EA Stop
-            } else {
-                throw "Certificate thumbprint not found and PfxFile not specified."
-            }
-        }
+    Process {
+
+        # surface exceptions without terminating the whole pipeline
+        trap { $PSCmdlet.WriteError($PSItem); return }
+
+        $CertThumbprint = Confirm-CertInstall @PSBoundParameters
 
         # check the old thumbprint value
         $oldThumb = (Get-Item RDS:\GatewayServer\SSLCertificate\Thumbprint).CurrentValue
 
         if ($oldThumb -ne $CertThumbprint) {
 
-            try {
+            # set the new value
+            Write-Verbose "Setting new RDGW thumbprint value"
+            Set-Item RDS:\GatewayServer\SSLCertificate\Thumbprint -Value $CertThumbprint -EA Stop -Verbose:$false
 
-                # set the new value
-                Write-Verbose "Setting new RDGW thumbprint value"
-                Set-Item RDS:\GatewayServer\SSLCertificate\Thumbprint -Value $CertThumbprint -EA Stop -Verbose:$false
+            # restart the service unless specified
+            if (-not $NoRestartService) {
+                Write-Verbose "Restarting TSGateway service"
+                Restart-Service TSGateway
+            }
 
-                # restart the service unless specified
-                if (!$NoRestartService) {
-                    Write-Verbose "Restarting TSGateway service"
-                    Restart-Service TSGateway
-                }
-
-                # remove the old cert if specified
-                if ($RemoveOldCert) { Remove-OldCert $oldThumb }
-
-            } catch { throw }
+            # remove the old cert if specified
+            if ($RemoveOldCert) { Remove-OldCert $oldThumb }
 
         } else {
             Write-Warning "Specified certificate is already configured for RDP Gateway"

@@ -1,63 +1,59 @@
 function Set-NPSCertificate {
-  [CmdletBinding()]
-  param(
-      [Parameter(Mandatory,Position=0,ValueFromPipelineByPropertyName)]
-      [Alias('Thumbprint')]
-      [string]$CertThumbprint,
-      [Parameter(Position=1,ValueFromPipelineByPropertyName)]
-      [string]$PfxFile,
-      [Parameter(Position=2,ValueFromPipelineByPropertyName)]
-      [securestring]$PfxPass,
-      [string]$IASConfigPath = '%SystemRoot%\System32\ias\ias.xml',
-      [Parameter(Mandatory=$true)]
-      [string]$PolicyName,
-      [switch]$RemoveOldCert
-  )
+    [CmdletBinding()]
+    param(
+        [Parameter(Position=0,ValueFromPipelineByPropertyName)]
+        [Alias('Thumbprint')]
+        [string]$CertThumbprint,
+        [Parameter(Position=1,ValueFromPipelineByPropertyName)]
+        [string]$PfxFile,
+        [Parameter(Position=2,ValueFromPipelineByPropertyName)]
+        [securestring]$PfxPass,
+        [string]$IASConfigPath = '%SystemRoot%\System32\ias\ias.xml',
+        [Parameter(Mandatory)]
+        [string]$PolicyName,
+        [switch]$RemoveOldCert
+    )
 
-  Process {
+    Process {
 
-      # install the cert if necessary
-      if (-not (Test-CertInstalled $CertThumbprint)) {
-          if ($PfxFile) {
-              $PfxFile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($PfxFile)
-              Import-PfxCertInternal $PfxFile -PfxPass $PfxPass
-          } else {
-              throw "Certificate thumbprint not found and PfxFile not specified."
-          }
-      }
+        # surface individual errors without terminating the whole pipeline
+        trap { $PSCmdlet.WriteError($PSItem); return }
 
-      [xml]$IASConfig = Get-Content ([Environment]::ExpandEnvironmentVariables($IASConfigPath))
+        $CertThumbprint = Confirm-CertInstall @PSBoundParameters
 
-      $policy = $IASConfig.SelectSingleNode("//RadiusProfiles//*[@name='$PolicyName']")
-      
-      # verify the policy exists
-      if (-not ($policy)) {
-          throw "Policy $PolicyName not found."
-      }
+        $configPath = [Environment]::ExpandEnvironmentVariables($IASConfigPath)
 
-      $currentThumb = $policy.Properties.msEAPConfiguration.InnerText.Substring(72,40)
-      
-      # update the cert thumbprint if it's different
-      if ($CertThumbprint -ne $currentThumb) {
+        [xml]$IASConfig = Get-Content $configPath
 
-        # save the old thumbprint
-        $oldThumb = $currentThumb
+        $policy = $IASConfig.SelectSingleNode("//RadiusProfiles//*[@name='$PolicyName']")
 
-        # set the new one
-        Write-Verbose "Setting $PolicyName certificate thumbprint to $CertThumbprint"
-        $policy.Properties.msEAPConfiguration.InnerText = $policy.Properties.msEAPConfiguration.InnerText.SubString(0,72) + $CertThumbprint.ToLower() + $policy.Properties.msEAPConfiguration.InnerText.SubString(112)
-        
-        $IASConfig.Save([Environment]::ExpandEnvironmentVariables($IASConfigPath))
+        # verify the policy exists
+        if (-not ($policy)) {
+            throw "Policy $PolicyName not found."
+        }
 
-        Restart-Service 'IAS'
-        
-        # remove the old cert if specified
-        if ($RemoveOldCert) { Remove-OldCert $oldThumb }
+        $currentThumb = $policy.Properties.msEAPConfiguration.InnerText.Substring(72,40)
 
-      } else {
-          Write-Warning "Specified certificate is already configured for NPS Policy $PolicyName"
-      }
+        # update the cert thumbprint if it's different
+        if ($CertThumbprint -ne $currentThumb) {
 
+            # save the old thumbprint
+            $oldThumb = $currentThumb
+
+            # set the new one
+            Write-Verbose "Setting $PolicyName certificate thumbprint to $CertThumbprint"
+            $policy.Properties.msEAPConfiguration.InnerText = $policy.Properties.msEAPConfiguration.InnerText.SubString(0,72) + $CertThumbprint.ToLower() + $policy.Properties.msEAPConfiguration.InnerText.SubString(112)
+
+            $IASConfig.Save($configPath)
+
+            Restart-Service 'IAS'
+
+            # remove the old cert if specified
+            if ($RemoveOldCert) { Remove-OldCert $oldThumb }
+
+        } else {
+            Write-Warning "Specified certificate is already configured for NPS Policy $PolicyName"
+        }
   }
 
 
@@ -82,7 +78,7 @@ function Set-NPSCertificate {
 
   .PARAMETER IASConfigPath
       The path to the NPS config file you want to edit. Default: %SystemRoot%\System32\ias\ias.xml
-  
+
   .PARAMETER PolicyName
       The name of the Network Policy.
 

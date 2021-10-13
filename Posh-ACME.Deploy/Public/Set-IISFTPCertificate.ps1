@@ -1,7 +1,7 @@
 function Set-IISFTPCertificate {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory,Position=0,ValueFromPipelineByPropertyName)]
+        [Parameter(Position=0,ValueFromPipelineByPropertyName)]
         [Alias('Thumbprint')]
         [string]$CertThumbprint,
         [Parameter(Position=1,ValueFromPipelineByPropertyName)]
@@ -18,8 +18,7 @@ function Set-IISFTPCertificate {
         [switch]$RemoveOldCert
     )
 
-    Process {
-
+    Begin {
         # make sure the WebAdministration module is available
         if (!(Get-Module -ListAvailable WebAdministration -Verbose:$false)) {
             try { throw "The WebAdministration module is required to use this function." }
@@ -27,23 +26,19 @@ function Set-IISFTPCertificate {
         } else {
             Import-Module WebAdministration -Verbose:$false
         }
+    }
 
-        # install the cert if necessary
-        if (!(Test-CertInstalled $CertThumbprint)) {
-            if ($PfxFile) {
-                $PfxFile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($PfxFile)
-                Import-PfxCertInternal $PfxFile -PfxPass $PfxPass
-            } else {
-                try { throw "Certificate thumbprint not found and PfxFile not specified." }
-                catch { $PSCmdlet.ThrowTerminatingError($_) }
-            }
-        }
+    Process {
+
+        # surface individual errors without terminating the whole pipeline
+        trap { $PSCmdlet.WriteError($PSItem); return }
+
+        $CertThumbprint = Confirm-CertInstall @PSBoundParameters
 
         # verify the site exists
         $sitePath = "IIS:\Sites\$SiteName"
         if (-not (Get-Item $sitePath -EA SilentlyContinue)) {
-            try { throw "Site $SiteName not found." }
-            catch { $PSCmdlet.ThrowTerminatingError($_) }
+            throw "Site $SiteName not found."
         }
 
         # check existing settings and update if necessary

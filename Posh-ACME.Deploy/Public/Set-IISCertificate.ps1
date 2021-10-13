@@ -1,7 +1,7 @@
 function Set-IISCertificate {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory,Position=0,ValueFromPipelineByPropertyName)]
+        [Parameter(Position=0,ValueFromPipelineByPropertyName)]
         [Alias('Thumbprint')]
         [string]$CertThumbprint,
         [Parameter(Position=1,ValueFromPipelineByPropertyName)]
@@ -16,27 +16,25 @@ function Set-IISCertificate {
         [switch]$RemoveOldCert
     )
 
-    Process {
-
+    Begin {
         # make sure the WebAdministration module is available
-        if (-not (Get-Module -ListAvailable WebAdministration -Verbose:$false)) {
-            throw "The WebAdministration module is required to use this function."
+        if (!(Get-Module -ListAvailable WebAdministration -Verbose:$false)) {
+            try { throw "The WebAdministration module is required to use this function." }
+            catch { $PSCmdlet.ThrowTerminatingError($_) }
         } else {
             Import-Module WebAdministration -Verbose:$false
         }
+    }
 
-        # install the cert if necessary
-        if (-not (Test-CertInstalled $CertThumbprint)) {
-            if ($PfxFile) {
-                $PfxFile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($PfxFile)
-                Import-PfxCertInternal $PfxFile -PfxPass $PfxPass
-            } else {
-                throw "Certificate thumbprint not found and PfxFile not specified."
-            }
-        }
+    Process {
 
-        # HostHeader with SSL is only supported on IIS versions with SNI support which is IIS 8+. So throw an error
-        # if they specified one and we can't use it.
+        # surface individual errors without terminating the whole pipeline
+        trap { $PSCmdlet.WriteError($PSItem); return }
+
+        $CertThumbprint = Confirm-CertInstall @PSBoundParameters
+
+        # HostHeader with SSL is only supported on IIS versions with SNI support which
+        # is IIS 8+. So throw an error if they specified one and we can't use it.
         $SupportSNI = ((Get-ItemProperty HKLM:\SOFTWARE\Microsoft\InetStp).MajorVersion -ge 8)
         if (-not ([string]::IsNullOrWhiteSpace($HostHeader))) {
             if (-not $SupportSNI) {

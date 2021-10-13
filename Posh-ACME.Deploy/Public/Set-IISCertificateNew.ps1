@@ -1,7 +1,7 @@
 function Set-IISCertificateNew {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory,Position=0,ValueFromPipelineByPropertyName)]
+        [Parameter(Position=0,ValueFromPipelineByPropertyName)]
         [Alias('Thumbprint')]
         [string]$CertThumbprint,
         [Parameter(Position=1,ValueFromPipelineByPropertyName)]
@@ -16,10 +16,7 @@ function Set-IISCertificateNew {
         [switch]$RemoveOldCert
     )
 
-    Process {
-
-        trap { $PSCmdlet.ThrowTerminatingError($PSItem) }
-
+    Begin {
         # Make sure we have the New-IISSiteBinding function available from
         # the IISAdministration module. It needs at least version 1.1.0.0 of
         # the module.
@@ -31,7 +28,8 @@ function Set-IISCertificateNew {
                 Select-Object -First 1
 
             if (-not $module) {
-                throw "The IISAdministration module version 1.1.0.0 or newer is required to use this function. https://blogs.iis.net/iisteam/introducing-iisadministration-in-the-powershell-gallery"
+                try { throw "The IISAdministration module version 1.1.0.0 or newer is required to use this function. https://blogs.iis.net/iisteam/introducing-iisadministration-in-the-powershell-gallery" }
+                catch { $PSCmdlet.ThrowTerminatingError($_) }
             } else {
                 if (-not $PSEdition -or $PSEdition -eq 'Desktop') {
                     $module | Import-Module -Verbose:$false
@@ -40,16 +38,14 @@ function Set-IISCertificateNew {
                 }
             }
         }
+    }
 
-        # install the cert if necessary
-        if (-not (Test-CertInstalled $CertThumbprint)) {
-            if ($PfxFile) {
-                $PfxFile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($PfxFile)
-                Import-PfxCertInternal $PfxFile -PfxPass $PfxPass
-            } else {
-                throw "Certificate thumbprint not found and PfxFile not specified."
-            }
-        }
+    Process {
+
+        # surface exceptions without terminating the whole pipeline
+        trap { $PSCmdlet.WriteError($PSItem); return }
+
+        $CertThumbprint = Confirm-CertInstall @PSBoundParameters
 
         # verify the site exists
         if (-not (Get-IISSite -Name $SiteName)) {

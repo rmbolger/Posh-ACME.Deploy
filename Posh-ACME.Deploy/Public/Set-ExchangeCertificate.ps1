@@ -1,7 +1,7 @@
 function Set-ExchangeCertificate {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory,Position=0,ValueFromPipelineByPropertyName)]
+        [Parameter(Position=0,ValueFromPipelineByPropertyName)]
         [Alias('Thumbprint')]
         [string]$CertThumbprint,
         [Parameter(Position=1,ValueFromPipelineByPropertyName)]
@@ -12,11 +12,11 @@ function Set-ExchangeCertificate {
         [switch]$RemoveOldCert
     )
 
-    Process {
-
+    Begin {
         # make sure the Exchange snapin is available on the local system
         if (!(Get-PSSnapin -Registered | Where-Object { $_.Name -match "Microsoft.Exchange.Management.PowerShell" })) {
-            throw "The Microsoft.Exchange.Management.PowerShell snapin is required to use this function."
+            try { throw "The Microsoft.Exchange.Management.PowerShell snapin is required to use this function." }
+            catch { $PSCmdlet.ThrowTerminatingError($_) }
         } else {
             # if it's not already loaded
             if (!(Get-PSSnapin | Where-Object {
@@ -26,38 +26,32 @@ function Set-ExchangeCertificate {
                       $_.Name -match "SnapIn"
                   )
             })) { # load it
-                 Add-PSSnapin Microsoft.Exchange.Management.PowerShell.SnapIn
-                 }
-        }
-
-        # install the cert if necessary
-        if (!(Test-CertInstalled $CertThumbprint)) {
-            if ($PfxFile) {
-                $PfxFile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($PfxFile)
-                Import-PfxCertInternal $PfxFile -PfxPass $PfxPass -EA Stop
-            } else {
-                throw "Certificate thumbprint not found and PfxFile not specified."
+                Add-PSSnapin Microsoft.Exchange.Management.PowerShell.SnapIn
             }
         }
+    }
+
+    Process {
+
+        # surface individual errors without terminating the whole pipeline
+        trap { $PSCmdlet.WriteError($PSItem); return }
+
+        $CertThumbprint = Confirm-CertInstall @PSBoundParameters
 
         # check the old thumbprint value
         $oldThumbs = ($ExchangeServices | ForEach-Object {
             $service = $_
-                (Get-ExchangeCertificate | Where-Object { $service -in ($_.Services -split ', ') }).Thumbprint
+            (Get-ExchangeCertificate | Where-Object { $service -in ($_.Services -split ', ') }).Thumbprint
         } | Sort-Object -Unique)
 
-        if ($oldThumbs -notcontains $CertThumbprint) {
+        if ($CertThumbprint -notin $oldThumbs) {
 
-            try {
+            # set the new value
+            Write-Verbose "Setting new Exchange thumbprint value"
+            Enable-ExchangeCertificate -Services $ExchangeServices -Thumbprint $CertThumbprint -Force -EA Stop -Verbose:$false
 
-                # set the new value
-                Write-Verbose "Setting new Exchange thumbprint value"
-                Enable-ExchangeCertificate -Services $ExchangeServices -Thumbprint $CertThumbprint -Force -EA Stop -Verbose:$false
-
-                # remove the old cert if specified
-                if ($RemoveOldCert) { Remove-OldCert $oldThumbs }
-
-            } catch { throw }
+            # remove the old certs if specified
+            if ($RemoveOldCert) { $oldThumbs | ForEach-Object { Remove-OldCert $_ } }
 
         } else {
             Write-Warning "Specified certificate is already configured for Exchange"
