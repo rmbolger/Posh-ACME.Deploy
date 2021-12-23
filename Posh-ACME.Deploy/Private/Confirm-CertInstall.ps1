@@ -17,17 +17,11 @@ function Confirm-CertInstall {
             throw "CertThumbprint and PfxFile were not provided. You must specify one or both of them."
         }
 
-        # grab the cert thumbprint from the PFX file if it wasn't specified
-        if (-not $CertThumbprint) {
-            Write-Verbose "Attempting to read Pfx thumbprint"
-            $CertThumbprint = Get-PfxThumbprint -PfxFile $PfxFile -PfxPass $PfxPass
-        }
-
         # install the cert if necessary
         if (-not (Test-CertInstalled $CertThumbprint)) {
-            if ($PfxFile) {
+            if ($PfxFile) {# grab the cert thumbprint from the PFX file if it wasn't valid/installed
                 $PfxFile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($PfxFile)
-                Import-PfxCertInternal $PfxFile -PfxPass $PfxPass
+                $CertThumbprint = Import-PfxCertInternal $PfxFile -PfxPass $PfxPass
             } else {
                 throw "Certificate thumbprint not found and no PfxFile file specified to import."
             }
