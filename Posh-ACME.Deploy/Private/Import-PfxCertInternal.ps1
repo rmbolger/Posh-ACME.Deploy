@@ -24,6 +24,7 @@ function Import-PfxCertInternal {
         $PfxPass = New-Object Security.SecureString
     }
 
+    $Thumbprint = ''
     if ($PSVersionTable.PSEdition -eq 'Core' -and !$IsWindows) {
         # This is a non-Windows version of PowerShell Core
         throw "Certificate import is not currently supported on non-Windows OSes"
@@ -60,8 +61,13 @@ function Import-PfxCertInternal {
 
         } finally {
             if ($null -ne $store) { $store.Dispose() }
-            if ($null -ne $pfx) { $pfx.Dispose() }
+            if ($null -ne $pfx) {
+                $Thumbprint = $pfx.Thumbprint
+                $pfx.Dispose()
+            }
         }
+
+    return $Thumbprint
 
     }
 
