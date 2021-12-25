@@ -1,8 +1,10 @@
 function Confirm-CertInstall {
     param(
         [Parameter(Position=0)]
+        [AllowEmptyString()]
         [string]$CertThumbprint,
         [Parameter(Position=1)]
+        [AllowEmptyString()]
         [string]$PfxFile,
         [Parameter(Position=2)]
         [securestring]$PfxPass,

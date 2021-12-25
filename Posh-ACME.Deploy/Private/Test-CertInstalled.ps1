@@ -3,6 +3,7 @@ function Test-CertInstalled {
     param(
         [Parameter(Mandatory,Position=0,ValueFromPipelineByPropertyName)]
         [Alias('Thumbprint')]
+        [AllowEmptyString()]
         [string]$CertThumbprint,
         [Parameter(Position=1)]
         [ValidateSet('LocalMachine','CurrentUser')]
@@ -10,6 +11,10 @@ function Test-CertInstalled {
         [Parameter(Position=2)]
         [string]$StoreName = 'My'
     )
+
+    if (-not $CertThumbprint) {
+        return $false
+    }
 
     $allCerts = Get-ChildItem Cert:\$StoreLocation\$StoreName
 
