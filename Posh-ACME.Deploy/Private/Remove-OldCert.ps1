@@ -14,7 +14,7 @@ function Remove-OldCert {
         $_.Thumbprint -eq $OldCertThumb
     } |
     ForEach-Object {
-        Write-Verbose "Deleting old certificate with thumbprint $OldCertThumb"
+        Write-Verbose "Deleting old cert with thumbprint $OldCertThumb"
         $_ | Remove-Item
     }
 

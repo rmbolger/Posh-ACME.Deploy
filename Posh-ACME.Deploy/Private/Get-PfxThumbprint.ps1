@@ -4,6 +4,7 @@ function Get-PfxThumbprint {
     param(
         [Parameter(Mandatory,Position=0)]
         [string]$PfxFile,
+        [Parameter(Position=1)]
         [securestring]$PfxPass
     )
 
