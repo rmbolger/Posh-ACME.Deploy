@@ -15,6 +15,7 @@ FunctionsToExport = @(
     'Set-IISCertificate'
     'Set-IISCertificateNew'
     'Set-IISFTPCertificate'
+    'Set-RASSTPCertificate'
     'Set-RDGWCertificate'
     'Set-RDSHCertificate'
     'Set-WinRMCertificate'
