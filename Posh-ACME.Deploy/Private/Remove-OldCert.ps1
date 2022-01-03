@@ -1,15 +1,21 @@
 function Remove-OldCert {
     [CmdletBinding()]
     param(
-        [string]$OldCertThumb
+        [string]$OldCertThumb,
+        [ValidateSet('LocalMachine','CurrentUser')]
+        [string]$StoreLocation = 'LocalMachine',
+        [string]$StoreName = 'My'
     )
 
     if ($null -eq $OldCertThumb) { return }
 
-    $oldCert = Get-ChildItem Cert:\LocalMachine\My | Where-Object {$_.Thumbprint -eq $OldCertThumb}
-    if ($oldCert) {
+    Get-ChildItem Cert:\$StoreLocation\$StoreName |
+    Where-Object {
+        $_.Thumbprint -eq $OldCertThumb
+    } |
+    ForEach-Object {
         Write-Verbose "Deleting old certificate with thumbprint $OldCertThumb"
-        $oldCert | Remove-Item
+        $_ | Remove-Item
     }
 
 }
