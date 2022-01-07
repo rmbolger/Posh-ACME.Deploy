@@ -38,7 +38,7 @@ function Set-ExchangeCertificate {
         $CertThumbprint = Confirm-CertInstall @PSBoundParameters
 
         $Cert = Get-ChildItem -Path "Cert:\LocalMachine\My\$CertThumbprint"
-        $CertExpire = $Cert.NotBefore
+        $CertExpire = $Cert.NotAfter
 
         # find the old thumbprint value for the specified services
         $OldCertThumbprint = ''
