@@ -32,29 +32,54 @@ function Set-NPSCertificate {
             throw "Policy $PolicyName not found."
         }
 
-        $currentThumb = $policy.Properties.msEAPConfiguration.InnerText.Substring(72,40)
 
-        # update the cert thumbprint if it's different
-        if ($CertThumbprint -ne $currentThumb) {
+        $oldThumbs = @()
+        $saverestart = $false
 
-            # save the old thumbprint
-            $oldThumb = $currentThumb
+        foreach ($eapconfig in $policy.Properties.msEAPConfiguration) {
 
-            # set the new one
-            Write-Verbose "Setting $PolicyName certificate thumbprint to $CertThumbprint"
-            $policy.Properties.msEAPConfiguration.InnerText = $policy.Properties.msEAPConfiguration.InnerText.SubString(0,72) + $CertThumbprint.ToLower() + $policy.Properties.msEAPConfiguration.InnerText.SubString(112)
+            if ($eapconfig.innerText.substring(0,32) -eq "0d000000000000000000000000000000") {
+                #EAP TLS
+                $substringstart = 80
+                $eaptype = "Microsoft: Smart Card or other certificate"
+            } elseif ($eapconfig.innerText.substring(0,32) -eq "19000000000000000000000000000000") {
+                #PEAP
+                $substringstart = 72
+                $eaptype = "Microsoft: Protected EAP (PEAP)"
+            } else {
+                Write-Warning "Unidentified EAP configuration security method. Skipping for now"
+                continue;
+            }
 
-            $IASConfig.Save($configPath)
+            $currentThumb = $eapconfig.InnerText.Substring($substringstart,40)
 
-            Restart-Service 'IAS'
+            # update the cert thumbprint if it's different
+            if ($CertThumbprint -ne $currentThumb) {
+                $saverestart = $true
 
-            # remove the old cert if specified
-            if ($RemoveOldCert) { Remove-OldCert $oldThumb }
+                # save the old thumbprints
+                $oldThumbs += $currentThumb
 
-        } else {
-            Write-Warning "Specified certificate is already configured for NPS Policy $PolicyName"
+                # set the new one
+                Write-Verbose "Setting NPS policy `'$PolicyName`' certificate thumbprint to $CertThumbprint for EAP type `'$eaptype`'"
+                $eapconfig.InnerText = $eapconfig.InnerText.Replace($currentThumb,$CertThumbprint.tolower())
+
+            } else {
+                Write-Warning "Specified certificate is already configured for EAP type `'$eaptype`' in NPS Policy `'$PolicyName`'"
+            }
         }
-  }
+
+        if ($saverestart) {
+            $IASConfig.Save($configPath)
+        
+            Restart-Service 'IAS'
+        
+            # remove the old cert if specified
+            if ($RemoveOldCert) { 
+                $oldThumbs | Sort-Object -Unique | ForEach-Object {Remove-OldCert $_ }
+            }
+        }
+    }
 
 
 
