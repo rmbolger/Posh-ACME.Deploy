@@ -1,3 +1,7 @@
+## 1.5.0 (2022-03-07)
+
+* Set-NPSCertificate now supports both PEAP and EAP-TLS (Thanks @amorrowbellarmine)
+
 ## 1.4.0 (2022-01-06)
 
 * Added `Set-IISCertificateNew` which was actually added in 1.3.0 but missed in the release notes. This should functions the same as the existing `Set-IISCertificate` function but is dependent on the IISAdministration module instead of the legacy WebAdministration module and should work on PowerShell 6+. However, it requires at least version 1.1.0.0 of the IISAdministration module which is distributed from powershellgallery.com.
