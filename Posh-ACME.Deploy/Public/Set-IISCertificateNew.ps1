@@ -11,7 +11,7 @@ function Set-IISCertificateNew {
         [string]$SiteName='Default Web Site',
         [uint32]$Port=443,
         [string]$IPAddress='*',
-        [string]$HostHeader,
+        [string[]]$HostHeader,
         [switch]$RequireSNI,
         [switch]$RemoveOldCert
     )
@@ -55,55 +55,70 @@ function Set-IISCertificateNew {
         $sslFlags = 'None'
         if ($RequireSNI) { $sslFlags = 'Sni' }
 
-        # check for an existing site binding
-        $bindMatch = "$($IPAddress):$($Port):$($HostHeader)"
-        $binding = (Get-IISSiteBinding -Name $SiteName -Protocol 'https' -WarningAction 'Ignore') | Where-Object {
-            $_.bindingInformation -eq $bindMatch
-        }
+        # multiple host headers require multiple bindins
+        [string[]]$oldThumbPrints = foreach ($hh in $HostHeader) {
 
-        # The IISAdministration module combines the creation of web binding and SSL binding
-        # into New-IISSiteBinding, but there's no Set-IISSiteBinding equivalent that would
-        # allow us to update the certificate thumbprint or tweak things like the SslFlags
-        # value on the binding. So if we find a binding that is not exactly what we want,
-        # we have to delete and re-create it.
-        if ($binding) {
+            # check for an existing site binding
+            $bindMatch = "$($IPAddress):$($Port):$($hh)"
+            $binding = (Get-IISSiteBinding -Name $SiteName -Protocol 'https' -WarningAction 'Ignore') | Where-Object {
+                $_.bindingInformation -eq $bindMatch
+            }
 
-            # save the old thumbprint for potential deleting later
-            $oldThumb = [BitConverter]::ToString($binding.CertificateHash).Replace('-','')
+            # The IISAdministration module combines the creation of web binding and SSL binding
+            # into New-IISSiteBinding, but there's no Set-IISSiteBinding equivalent that would
+            # allow us to update the certificate thumbprint or tweak things like the SslFlags
+            # value on the binding. So if we find a binding that is not exactly what we want,
+            # we have to delete and re-create it.
+            if ($binding) {
 
-            if ($binding.sslFlags -ne $sslFlags -or $oldThumb -ne $CertThumbprint) {
+                # grab the old/current thumbprint
+                $oldThumb = [BitConverter]::ToString($binding.CertificateHash).Replace('-','')
 
-                $removeBindingParams = @{
-                    Name = $SiteName
-                    BindingInformation = $bindMatch
-                    Protocol = 'https'
-                    RemoveConfigOnly = $true
-                    Confirm = $false
+                if ($binding.sslFlags -ne $sslFlags -or $oldThumb -ne $CertThumbprint) {
+
+                    $removeBindingParams = @{
+                        Name = $SiteName
+                        BindingInformation = $bindMatch
+                        Protocol = 'https'
+                        RemoveConfigOnly = $true
+                        Confirm = $false
+                    }
+                    Write-Verbose "Deleting IIS site binding for $bindMatch"
+                    Remove-IISSiteBinding @removeBindingParams
+                    $binding = $null
+
+                    # save the old thumbprint for potential deletion later
+                    if ($oldThumb -ne $CertThumbprint) {
+                        Write-Output $oldThumb
+                    }
                 }
-                Write-Verbose "Deleting IIS site binding for $bindMatch"
-                Remove-IISSiteBinding @removeBindingParams
-                $binding = $null
             }
+
+            # create the new binding if necessary
+            if ($binding) {
+                Write-Verbose "IIS site binding already exists for $bindMatch"
+            } else {
+
+                $newBindingParams = @{
+                    Name = $SiteName
+                    Protocol = 'https'
+                    BindingInformation = $bindMatch
+                    SslFlag = $sslFlags
+                    CertificateThumbprint = $CertThumbprint
+                    CertStoreLocation = 'Cert:\LocalMachine\My'
+                }
+                Write-Verbose "Adding IIS site binding for $bindMatch"
+                New-IISSiteBinding @newBindingParams
+
+            }
+
         }
 
-        # create the new binding if necessary
-        if ($binding) {
-            Write-Verbose "IIS site binding already exists for $bindMatch"
-        } else {
-
-            $newBindingParams = @{
-                Name = $SiteName
-                Protocol = 'https'
-                BindingInformation = $bindMatch
-                SslFlag = $sslFlags
-                CertificateThumbprint = $CertThumbprint
-                CertStoreLocation = 'Cert:\LocalMachine\My'
+        # remove the old cert(s) if specified
+        if ($RemoveOldCert) {
+            $oldThumbprints | Sort-Object -Unique | ForEach-Object {
+                Remove-OldCert $_
             }
-            Write-Verbose "Adding IIS site binding for $bindMatch"
-            New-IISSiteBinding @newBindingParams
-
-            # remove the old cert if specified
-            if ($RemoveOldCert) { Remove-OldCert $oldThumb }
         }
 
     }
@@ -142,7 +157,7 @@ function Set-IISCertificateNew {
         The listening IP Address for the site binding. Defaults to '*' which is "All Unassigned" in the IIS management console.
 
     .PARAMETER HostHeader
-        The "Host name" value for the site binding. If empty, this binding will respond to all names.
+        The "Host name" value for the site binding. If empty, this binding will respond to all names. You can also pass an array of names to create a binding for each name in the array.
 
     .PARAMETER RequireSNI
         If specified, the "Require Server Name Indication" box will be checked for the site binding.
