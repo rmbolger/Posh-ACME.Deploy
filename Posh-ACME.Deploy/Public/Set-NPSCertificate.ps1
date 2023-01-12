@@ -29,7 +29,6 @@ function Set-NPSCertificate {
         [xml]$IASConfig = Get-Content $configPath
 
         if ('ByName' -eq $PSCmdlet.ParameterSetName) {
-            Write-Verbose "querying policy"
             $policies = $IASConfig.SelectSingleNode("//RadiusProfiles//*[@name='$PolicyName']")
             # verify the policy exists
             if (-not ($policies)) {
