@@ -1,3 +1,8 @@
+## 1.6.0 (2023-01-23)
+
+* Set-IISCertificateNew now accepts a string array for the `-HostHeader` param which will create bindings for each value instead of needing to call the function multiple times. (#23)
+* Set-NPSCertificate now has a `-PolicyXPath` parameter which can be used instead of `-PolicyName` to apply the certificate to all matching policies in the XPath statement. (#24)
+
 ## 1.5.0 (2022-03-07)
 
 * Set-NPSCertificate now supports both PEAP and EAP-TLS (Thanks @amorrowbellarmine)

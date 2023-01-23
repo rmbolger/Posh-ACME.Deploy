@@ -1,7 +1,7 @@
 @{
 
 RootModule = 'Posh-ACME.Deploy.psm1'
-ModuleVersion = '1.5.0'
+ModuleVersion = '1.6.0'
 GUID = '79819e0a-30db-4742-bcc4-0c956273db51'
 Author = 'Ryan Bolger'
 Copyright = '(c) 2018 Ryan Bolger. All rights reserved.'
@@ -44,9 +44,10 @@ PrivateData = @{
 
         # ReleaseNotes of this module
         ReleaseNotes = @'
-## 1.5.0 (2022-03-07)
+## 1.6.0 (2023-01-23)
 
-* Set-NPSCertificate now supports both PEAP and EAP-TLS (Thanks @amorrowbellarmine)
+* Set-IISCertificateNew now accepts a string array for the `-HostHeader` param which will create bindings for each value instead of needing to call the function multiple times. (#23)
+* Set-NPSCertificate now has a `-PolicyXPath` parameter which can be used instead of `-PolicyName` to apply the certificate to all matching policies in the XPath statement. (#24)
 '@
 
     } # End of PSData hashtable
