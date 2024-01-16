@@ -11,8 +11,13 @@ function Set-IISCertificateNew {
         [string]$SiteName='Default Web Site',
         [uint32]$Port=443,
         [string]$IPAddress='*',
-        [string[]]$HostHeader,
+        [string[]]$HostHeader=@(''),
         [switch]$RequireSNI,
+        [switch]$DisableHTTP2,
+        [switch]$DisableOCSPStapling,
+        [switch]$DisableQUIC,
+        [switch]$DisableTLS13,
+        [switch]$DisableLegacyTLS,
         [switch]$RemoveOldCert
     )
 
@@ -38,6 +43,18 @@ function Set-IISCertificateNew {
                 }
             }
         }
+
+        # build a map of switches to their corresponding SslFlags enum value
+        $switchMap = @{
+            'RequireSNI' = [Microsoft.Web.Administration.SslFlags]::Sni
+            'DisableHTTP2' = [Microsoft.Web.Administration.SslFlags]::DisableHTTP2
+            'DisableOCSPStapling' = [Microsoft.Web.Administration.SslFlags]::DisableOCSPStp
+            'DisableQUIC' = [Microsoft.Web.Administration.SslFlags]::DisableQUIC
+            'DisableTLS13' = [Microsoft.Web.Administration.SslFlags]::DisableTLS13
+            'DisableLegacyTLS' = [Microsoft.Web.Administration.SslFlags]::DisableLegacyTLS
+        }
+        $psb = $PSBoundParameters
+
     }
 
     Process {
@@ -52,10 +69,7 @@ function Set-IISCertificateNew {
             throw "Site $SiteName not found."
         }
 
-        $sslFlags = 'None'
-        if ($RequireSNI) { $sslFlags = 'Sni' }
-
-        # multiple host headers require multiple bindins
+        # multiple host headers require multiple bindings
         [string[]]$oldThumbPrints = foreach ($hh in $HostHeader) {
 
             # check for an existing site binding
@@ -74,7 +88,23 @@ function Set-IISCertificateNew {
                 # grab the old/current thumbprint
                 $oldThumb = [BitConverter]::ToString($binding.CertificateHash).Replace('-','')
 
-                if ($binding.sslFlags -ne $sslFlags -or $oldThumb -ne $CertThumbprint) {
+                # sslFlags is a bitwise combination of values from the [Microsoft.Web.Administration.SslFlags]
+                # enum. It has added new feature flags over the years between Server 2016/2019/2022 and will
+                # likely continue to do so. To avoid overwriting future flags this function may not yet know
+                # about, we need to check for each option's flag individually in the current binding value
+                # instead of just comparing the calculated sum of the specified switches.
+
+                # adjust the flags based on the specified switches
+                $newFlags = $binding.sslFlags
+                foreach ($switchName in $switchMap.Keys) {
+                    if ($psb.ContainsKey($switchName)) {
+                        if ($psb[$switchName]) { $newFlags = $newFlags -bor $switchMap[$switchName] }   # Ensure Set
+                        else                   { $newFlags = $newFlags -bxor $switchMap[$switchName] }  # Ensure Unset
+                    }
+                }
+
+                # remove the binding if flags or thumbprint are different
+                if ($binding.sslFlags -ne $newFlags -or $oldThumb -ne $CertThumbprint) {
 
                     $removeBindingParams = @{
                         Name = $SiteName
@@ -92,6 +122,15 @@ function Set-IISCertificateNew {
                         Write-Output $oldThumb
                     }
                 }
+            } else {
+                # no existing binding means we have to build the sslFlags value from scratch
+                $newFlags = [Microsoft.Web.Administration.SslFlags]::None
+                foreach ($switchName in $switchMap.Keys) {
+                    if ($psb.ContainsKey($switchName)) {
+                        if ($psb[$switchName]) { $newFlags = $newFlags -bor $switchMap[$switchName] }   # Ensure Set
+                        else                   { $newFlags = $newFlags -bxor $switchMap[$switchName] }  # Ensure Unset
+                    }
+                }
             }
 
             # create the new binding if necessary
@@ -103,7 +142,7 @@ function Set-IISCertificateNew {
                     Name = $SiteName
                     Protocol = 'https'
                     BindingInformation = $bindMatch
-                    SslFlag = $sslFlags
+                    SslFlag = $newFlags
                     CertificateThumbprint = $CertThumbprint
                     CertStoreLocation = 'Cert:\LocalMachine\My'
                 }
@@ -138,6 +177,8 @@ function Set-IISCertificateNew {
         can be installed from the PowerShell Gallery.
         https://blogs.iis.net/iisteam/introducing-iisadministration-in-the-powershell-gallery
 
+        Some of the SSL binding flags like DisableTLS13 might not be supported on older versions of IIS.
+
     .PARAMETER CertThumbprint
         Thumbprint/Fingerprint for the certificate to configure.
 
@@ -161,6 +202,21 @@ function Set-IISCertificateNew {
 
     .PARAMETER RequireSNI
         If specified, the "Require Server Name Indication" box will be checked for the site binding.
+
+    .PARAMETER DisableHTTP2
+        If specified, the "Disable HTTP/2" box will be checked for the site binding.
+
+    .PARAMETER DisableOCSPStapling
+        If specified, the "Disable OCSP Stapling" box will be checked for the site binding.
+
+    .PARAMETER DisableQUIC
+        If specified, the "Disable QUIC" box will be checked for the site binding.
+
+    .PARAMETER DisableTLS13
+        If specified, the "Disable TLS 1.3 over TCP" box will be checked for the site binding.
+
+    .PARAMETER DisableLegacyTLS
+        If specified, the "Disable Legacy TLS" box will be checked for the site binding.
 
     .PARAMETER RemoveOldCert
         If specified, the old certificate associated with RDP will be deleted from the local system's Personal certificate store. Ignored if the old certificate has already been removed or otherwise can't be found.
