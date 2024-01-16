@@ -1,4 +1,4 @@
-function Set-IISCertificateOld {
+function Set-IISCertificate {
     [CmdletBinding()]
     param(
         [Parameter(Position=0,ValueFromPipelineByPropertyName)]
@@ -11,157 +11,153 @@ function Set-IISCertificateOld {
         [string]$SiteName='Default Web Site',
         [uint32]$Port=443,
         [string]$IPAddress='*',
-        [string]$HostHeader,
+        [string[]]$HostHeader=@(''),
         [switch]$RequireSNI,
+        [switch]$DisableHTTP2,
+        [switch]$DisableOCSPStapling,
+        [switch]$DisableQUIC,
+        [switch]$DisableTLS13,
+        [switch]$DisableLegacyTLS,
         [switch]$RemoveOldCert
     )
 
     Begin {
-        # make sure the WebAdministration module is available
-        if (!(Get-Module -ListAvailable WebAdministration -Verbose:$false)) {
-            try { throw "The WebAdministration module is required to use this function." }
-            catch { $PSCmdlet.ThrowTerminatingError($_) }
-        } else {
-            Import-Module WebAdministration -Verbose:$false
+        # Make sure we have the New-IISSiteBinding function available from
+        # the IISAdministration module. It needs at least version 1.1.0.0 of
+        # the module.
+        if (-not (Get-Command New-IISSiteBinding -EA Ignore)) {
+
+            $module = Get-Module -ListAvailable IISAdministration -All -Verbose:$false |
+                Where-Object { $_.Version -ge [version]'1.1.0.0' } |
+                Sort-Object -Descending Version |
+                Select-Object -First 1
+
+            if (-not $module) {
+                try { throw "The IISAdministration module version 1.1.0.0 or newer is required to use this function. https://blogs.iis.net/iisteam/introducing-iisadministration-in-the-powershell-gallery" }
+                catch { $PSCmdlet.ThrowTerminatingError($_) }
+            } else {
+                if (-not $PSEdition -or $PSEdition -eq 'Desktop') {
+                    $module | Import-Module -Verbose:$false
+                } else {
+                    $module | Import-Module -UseWindowsPowerShell -Verbose:$false
+                }
+            }
         }
+
+        # build a map of switches to their corresponding SslFlags enum value
+        $switchMap = @{
+            'RequireSNI' = [Microsoft.Web.Administration.SslFlags]::Sni
+            'DisableHTTP2' = [Microsoft.Web.Administration.SslFlags]::DisableHTTP2
+            'DisableOCSPStapling' = [Microsoft.Web.Administration.SslFlags]::DisableOCSPStp
+            'DisableQUIC' = [Microsoft.Web.Administration.SslFlags]::DisableQUIC
+            'DisableTLS13' = [Microsoft.Web.Administration.SslFlags]::DisableTLS13
+            'DisableLegacyTLS' = [Microsoft.Web.Administration.SslFlags]::DisableLegacyTLS
+        }
+        $psb = $PSBoundParameters
+
     }
 
     Process {
 
-        # surface individual errors without terminating the whole pipeline
+        # surface exceptions without terminating the whole pipeline
         trap { $PSCmdlet.WriteError($PSItem); return }
 
         $CertThumbprint = Confirm-CertInstall @PSBoundParameters
 
-        # HostHeader with SSL is only supported on IIS versions with SNI support which
-        # is IIS 8+. So throw an error if they specified one and we can't use it.
-        $SupportSNI = ((Get-ItemProperty HKLM:\SOFTWARE\Microsoft\InetStp).MajorVersion -ge 8)
-        if (-not ([string]::IsNullOrWhiteSpace($HostHeader))) {
-            if (-not $SupportSNI) {
-                throw "Host Headers for SSL/TLS bindings are only supported on IIS 8.0 or higher."
-            }
-        } elseif ($RequireSNI) {
-            # HostHeader is empty but they used -RequireSNI, so throw an error
-            throw "RequireSNI specified, but HostHeader is missing."
-        }
-
         # verify the site exists
-        if (-not (Get-WebSite -Name $SiteName)) {
+        if (-not (Get-IISSite -Name $SiteName)) {
             throw "Site $SiteName not found."
         }
 
-        $sslFlags = 0
-        if ($RequireSNI) { $sslFlags = 1 }
+        # multiple host headers require multiple bindings
+        [string[]]$oldThumbPrints = foreach ($hh in $HostHeader) {
 
-        # check for an existing site binding
-        $bindMatch = "$($IPAddress):$($Port):$($HostHeader)"
-        $binding = Get-WebBinding -Name $SiteName -Protocol 'https' | Where-Object {
-            $_.bindingInformation -eq $bindMatch
-        }
-        if ($binding) {
+            # check for an existing site binding
+            $bindMatch = "$($IPAddress):$($Port):$($hh)"
+            $binding = (Get-IISSiteBinding -Name $SiteName -Protocol 'https' -WarningAction 'Ignore') | Where-Object {
+                $_.bindingInformation -eq $bindMatch
+            }
 
-            # we've got a match on the binding string, but now we have to make sure the sslFlags value
-            # also matches. But sslFlags only exists on IIS 8+, so don't bother checking on earlier versions
-            if ($SupportSNI) {
+            # The IISAdministration module combines the creation of web binding and SSL binding
+            # into New-IISSiteBinding, but there's no Set-IISSiteBinding equivalent that would
+            # allow us to update the certificate thumbprint or tweak things like the SslFlags
+            # value on the binding. So if we find a binding that is not exactly what we want,
+            # we have to delete and re-create it.
+            if ($binding) {
 
-                # update the value if it doesn't match
-                if ($binding.sslFlags -ne $sslFlags) {
-                    Write-Verbose "Updating sslFlags on binding $bindMatch"
-                    Set-WebBinding -Name $SiteName -BindingInformation $bindMatch -PropertyName sslFlags -Value $sslFlags
-                } else {
-                    Write-Verbose "IIS Binding already exists for $bindMatch"
+                # grab the old/current thumbprint
+                $oldThumb = [BitConverter]::ToString($binding.CertificateHash).Replace('-','')
+
+                # sslFlags is a bitwise combination of values from the [Microsoft.Web.Administration.SslFlags]
+                # enum. It has added new feature flags over the years between Server 2016/2019/2022 and will
+                # likely continue to do so. To avoid overwriting future flags this function may not yet know
+                # about, we need to check for each option's flag individually in the current binding value
+                # instead of just comparing the calculated sum of the specified switches.
+
+                # adjust the flags based on the specified switches
+                $newFlags = $binding.sslFlags
+                foreach ($switchName in $switchMap.Keys) {
+                    if ($psb.ContainsKey($switchName)) {
+                        if ($psb[$switchName]) { $newFlags = $newFlags -bor $switchMap[$switchName] }   # Ensure Set
+                        else                   { $newFlags = $newFlags -bxor $switchMap[$switchName] }  # Ensure Unset
+                    }
                 }
 
+                # remove the binding if flags or thumbprint are different
+                if ($binding.sslFlags -ne $newFlags -or $oldThumb -ne $CertThumbprint) {
+
+                    $removeBindingParams = @{
+                        Name = $SiteName
+                        BindingInformation = $bindMatch
+                        Protocol = 'https'
+                        RemoveConfigOnly = $true
+                        Confirm = $false
+                    }
+                    Write-Verbose "Deleting IIS site binding for $bindMatch"
+                    Remove-IISSiteBinding @removeBindingParams
+                    $binding = $null
+
+                    # save the old thumbprint for potential deletion later
+                    if ($oldThumb -ne $CertThumbprint) {
+                        Write-Output $oldThumb
+                    }
+                }
             } else {
-                Write-Verbose "IIS Binding already exists for $bindMatch"
+                # no existing binding means we have to build the sslFlags value from scratch
+                $newFlags = [Microsoft.Web.Administration.SslFlags]::None
+                foreach ($switchName in $switchMap.Keys) {
+                    if ($psb.ContainsKey($switchName)) {
+                        if ($psb[$switchName]) { $newFlags = $newFlags -bor $switchMap[$switchName] }   # Ensure Set
+                        else                   { $newFlags = $newFlags -bxor $switchMap[$switchName] }  # Ensure Unset
+                    }
+                }
             }
 
-        } else {
-            # no match
+            # create the new binding if necessary
+            if ($binding) {
+                Write-Verbose "IIS site binding already exists for $bindMatch"
+            } else {
 
-            # build the param splat we'll use with New-WebBinding
-            $newBindingParams = @{
-                Name = $SiteName
-                Protocol = 'https'
-                IPAddress = $IPAddress
-                Port = $Port
-            }
-            if ($HostHeader) {
-                $newBindingParams.HostHeader = $HostHeader
-            }
-            if ($SupportSNI) {
-                $newBindingParams.SslFlags = $sslFlags
+                $newBindingParams = @{
+                    Name = $SiteName
+                    Protocol = 'https'
+                    BindingInformation = $bindMatch
+                    SslFlag = $newFlags
+                    CertificateThumbprint = $CertThumbprint
+                    CertStoreLocation = 'Cert:\LocalMachine\My'
+                }
+                Write-Verbose "Adding IIS site binding for $bindMatch"
+                New-IISSiteBinding @newBindingParams
+
             }
 
-            Write-Verbose "Adding new site binding for $bindMatch"
-            New-WebBinding @newBindingParams
         }
 
-        # get a reference to the cert
-        $cert = Get-ChildItem Cert:\LocalMachine\My | Where-Object { $_.Thumbprint -eq $CertThumbprint }
-
-        # get the current ssl binding list
-        $sslBindings = Get-ChildItem IIS:\SslBindings | Where-Object { $_.Sites.Value -eq $SiteName }
-
-        # Matching the SSL binding is weird because it changes depending on whether you have the
-        # SNI required flag enabled on the web binding or not. If yes, the IP is stripped so the string
-        # starts with '!' and ends with '!<hostname>'. If not, the IP is included (0.0.0.0 for *) but the
-        # hostname and it's '!' are stripped. So:
-        #
-        #           *:443:                 + No SNI =     0.0.0.0!443
-        # 10.10.10.10:443:                 + No SNI = 10.10.10.10!443
-        #           *:443:test.example.com + No SNI =     0.0.0.0!443
-        # 10.10.10.10:443:test.example.com + No SNI = 10.10.10.10!443
-        #           *:443:                 +    SNI = (not possible)
-        # 10.10.10.10:443:                 +    SNI = (not possible)
-        #           *:443:test.example.com +    SNI =            !443!test.example.com
-        # 10.10.10.10:443:test.example.com +    SNI =            !443!test.example.com
-        #
-        # This means it's possible to have multiple web bindings that basically share an SSL binding
-        # so if you change the thumbprint on one, it changes both.
-
-        $sslMatch = $bindMatch.Replace(':','!').Replace('*','0.0.0.0')
-        if ($sslMatch[-1] -eq '!') {
-            # remove the ending '!'
-            $sslMatch = $sslMatch.Substring(0,$sslMatch.Length-1)
-        } elseif ($RequireSNI) {
-            # remove the IP in front
-            $sslMatch = $sslMatch.Substring($sslMatch.IndexOf('!'))
-        } else {
-            # remove the '!<hostname>' at the end
-            $sslMatch = $sslMatch.Substring(0,$sslMatch.LastIndexOf('!'))
-        }
-        Write-Verbose "Checking SSL binding $sslMatch"
-
-        # check if ssl binding already exists
-        if ($binding = $sslBindings | Where-Object { $_.PSChildName -eq $sslMatch }) {
-
-            # save the old thumbprint for potential deleting later
-            $oldThumb = $binding.Thumbprint
-
-            if ($oldThumb -eq $CertThumbprint) {
-                Write-Verbose "SSL binding already exists for $sslMatch"
-            } else {
-                Write-Verbose "Removing old thumbprint from $sslMatch SSL binding"
-                # Could never get Set-Item to work directly, always kept throwing param errors
-                # So instead, we'll delete and re-create
-                Get-Item IIS:\SslBindings\$sslMatch | Remove-Item
-                $addNew = $true
+        # remove the old cert(s) if specified
+        if ($RemoveOldCert) {
+            $oldThumbprints | Sort-Object -Unique | ForEach-Object {
+                Remove-OldCert $_
             }
-
-        } else { $addNew = $true }
-
-        if ($addNew) {
-
-            Write-Verbose "Adding certificate thumbprint $CertThumbprint"
-            if ($SupportSNI) {
-                $cert | New-Item IIS:\SslBindings\$sslMatch -SslFlags $sslFlags | Out-Null
-            } else {
-                $cert | New-Item IIS:\SslBindings\$sslMatch | Out-Null
-            }
-
-            # remove the old cert if specified
-            if ($RemoveOldCert) { Remove-OldCert $oldThumb }
         }
 
     }
@@ -176,6 +172,12 @@ function Set-IISCertificateOld {
 
     .DESCRIPTION
         Intended to be used with the output from Posh-ACME's New-PACertificate or Submit-Renewal.
+
+        This function is dependent on the IISAdministration module version 1.1.0.0 or greater which
+        can be installed from the PowerShell Gallery.
+        https://blogs.iis.net/iisteam/introducing-iisadministration-in-the-powershell-gallery
+
+        Some of the SSL binding flags like DisableTLS13 might not be supported on older versions of IIS.
 
     .PARAMETER CertThumbprint
         Thumbprint/Fingerprint for the certificate to configure.
@@ -196,21 +198,36 @@ function Set-IISCertificateOld {
         The listening IP Address for the site binding. Defaults to '*' which is "All Unassigned" in the IIS management console.
 
     .PARAMETER HostHeader
-        The "Host name" value for the site binding. If empty, this binding will respond to all names. Supported only on IIS 8.0 or higher.
+        The "Host name" value for the site binding. If empty, this binding will respond to all names. You can also pass an array of names to create a binding for each name in the array.
 
     .PARAMETER RequireSNI
-        If specified, the "Require Server Name Indication" box will be checked for the site binding. Supported only on IIS 8.0 or higher.
+        If specified, the "Require Server Name Indication" box will be checked for the site binding.
+
+    .PARAMETER DisableHTTP2
+        If specified, the "Disable HTTP/2" box will be checked for the site binding.
+
+    .PARAMETER DisableOCSPStapling
+        If specified, the "Disable OCSP Stapling" box will be checked for the site binding.
+
+    .PARAMETER DisableQUIC
+        If specified, the "Disable QUIC" box will be checked for the site binding.
+
+    .PARAMETER DisableTLS13
+        If specified, the "Disable TLS 1.3 over TCP" box will be checked for the site binding.
+
+    .PARAMETER DisableLegacyTLS
+        If specified, the "Disable Legacy TLS" box will be checked for the site binding.
 
     .PARAMETER RemoveOldCert
         If specified, the old certificate associated with RDP will be deleted from the local system's Personal certificate store. Ignored if the old certificate has already been removed or otherwise can't be found.
 
     .EXAMPLE
-        New-PACertificate site1.example.com | Set-IISCertificate -SiteName "My Website"
+        New-PACertificate site1.example.com | Set-IISCertificateNew -SiteName "My Website"
 
         Create a new certificate and add it to the specified IIS website on the default port.
 
     .EXAMPLE
-        Submit-Renewal site1.example.com | Set-IISCertificate -SiteName "My Website"
+        Submit-Renewal site1.example.com | Set-IISCertificateNew -SiteName "My Website"
 
         Renew a certificate and and add it to the specified IIS website on the default port.
 
