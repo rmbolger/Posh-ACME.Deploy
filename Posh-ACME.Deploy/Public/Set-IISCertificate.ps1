@@ -1,4 +1,4 @@
-function Set-IISCertificate {
+function Set-IISCertificateOld {
     [CmdletBinding()]
     param(
         [Parameter(Position=0,ValueFromPipelineByPropertyName)]

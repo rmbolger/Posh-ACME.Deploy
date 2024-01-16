@@ -13,7 +13,7 @@ DotNetFrameworkVersion = '4.7.1'
 FunctionsToExport = @(
     'Set-ExchangeCertificate'
     'Set-IISCertificate'
-    'Set-IISCertificateNew'
+    'Set-IISCertificateOld'
     'Set-IISFTPCertificate'
     'Set-RASSTPCertificate'
     'Set-RDGWCertificate'
@@ -23,7 +23,9 @@ FunctionsToExport = @(
 )
 CmdletsToExport = @()
 VariablesToExport = @()
-AliasesToExport = @()
+AliasesToExport = @(
+    'Set-IISCertificateNew'
+)
 
 # Private data to pass to the module specified in RootModule/ModuleToProcess. This may also contain a PSData hashtable with additional module metadata used by PowerShell.
 PrivateData = @{

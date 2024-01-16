@@ -13,3 +13,7 @@ Foreach($import in @($Public + $Private))
         Write-Error -Message "Failed to import function $($import.fullname): $_"
     }
 }
+
+# Set-IISCertificateNew was renamed to Set-IISCertificate in 2.x. But we'll add
+# an alias to the old name to reduce script breakage until the next major version.
+Set-Alias Set-IISCertificateNew -Value Set-IISCertificate
