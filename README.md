@@ -6,7 +6,7 @@ A Collection of certificate deployment functions intended for use with [Posh-ACM
 
 - IIS 7.0+
 - IIS FTP services
-- Remote Desktop Session Host
+- Remote Desktop Session Host / Remote Desktop listener
 - Remote Desktop Gateway
 - WinRM
 - Exchange (tested on 2019)
