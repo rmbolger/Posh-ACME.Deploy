@@ -2,7 +2,7 @@
 
 A Collection of certificate deployment functions intended for use with [Posh-ACME](https://github.com/rmbolger/Posh-ACME). But the functions should be generic enough to work with any certificate.
 
-# Supported Deployment Targets
+## Supported Deployment Targets
 
 - IIS 7.0+
 - IIS FTP services
@@ -13,9 +13,7 @@ A Collection of certificate deployment functions intended for use with [Posh-ACM
 - [Network Policy Server (NPS)](https://docs.microsoft.com/en-us/windows-server/networking/technologies/nps/nps-top)
 - Remote Access SSTP
 
-# Install
-
-## Release
+## Installation (Stable)
 
 The latest release version can found in the [PowerShell Gallery](https://www.powershellgallery.com/packages/Posh-ACME.Deploy/) or the [GitHub releases page](https://github.com/rmbolger/Posh-ACME.Deploy/releases). Installing from the gallery is easiest using `Install-Module` from the PowerShellGet module. See [Installing PowerShellGet](https://docs.microsoft.com/en-us/powershell/scripting/gallery/installing-psget) if you don't already have it installed.
 
@@ -29,7 +27,7 @@ Install-Module -Name Posh-ACME.Deploy -Scope CurrentUser
 
 *NOTE: If you use PowerShell 5.1 or earlier, `Install-Module` may throw an error depending on your Windows and .NET version due to a change PowerShell Gallery made to their TLS settings. For more info and a workaround, see the [official blog post](https://devblogs.microsoft.com/powershell/powershell-gallery-tls-support/).*
 
-## Development
+## Installation (Development)
 
 To install the latest *development* version from the git main branch, use the following PowerShell command. This method assumes a default [`PSModulePath`](https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_psmodulepath) environment variable.
 
@@ -38,7 +36,7 @@ To install the latest *development* version from the git main branch, use the fo
 iex (irm https://raw.githubusercontent.com/rmbolger/Posh-ACME.Deploy/main/instdev.ps1)
 ```
 
-# Quick Start
+## Quick Start
 
 An IIS website tends to be the most common certificate target for this module. We'll assume you have already created a cert using [Posh-ACME](https://github.com/rmbolger/Posh-ACME) and want to deploy it to the default site in IIS and bound to all IPs and port 443 with no host header or [SNI](https://en.wikipedia.org/wiki/Server_Name_Indication) requirement. *(SNI and host headers for TLS require IIS 8.0+)*
 
@@ -62,12 +60,12 @@ if ($cert = Submit-Renewal) {
 
 The rest of the functions in this module work very similarly. Check the associated parameters using `Get-Help <function>` for details. If you forget which functions are available, you can list them with `Get-Command -Module Posh-ACME.Deploy`.
 
-# Requirements and Platform Support
+## Requirements and Platform Support
 
-All of the currently included functions are tied to Windows services and related modules. Generally, you should have Windows PowerShell 5.1 or later (Desktop edition) with .NET Framework 4.7.1 or later which are the same minimum requirements as Posh-ACME.
+All of the currently included functions are tied to Windows services and related modules. Generally, you should have Windows PowerShell 5.1 with .NET Framework 4.7.1 or later which are the same minimum requirements as Posh-ACME.
 
-PowerShell Core support will be dependent on the specific function you're using and whether any dependent modules (WebAdministration, RemoteDesktopServices, etc) are compatible.
+PowerShell 7+ support will be dependent on the specific function you're using and whether any dependent modules (WebAdministration, RemoteDesktopServices, etc) are compatible.
 
-# Changelog
+## Changelog
 
-See [CHANGELOG.md](/CHANGELOG.md)
+See [CHANGELOG.md](https://github.com/rmbolger/Posh-ACME.Deploy/blob/main/CHANGELOG.md)

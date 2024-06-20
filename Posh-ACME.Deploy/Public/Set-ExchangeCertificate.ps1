@@ -13,7 +13,7 @@ function Set-ExchangeCertificate {
     )
 
     Begin {
-    
+
         # make sure the Exchange snapin is available on the local system
         if (!(Get-PSSnapin -Registered | Where-Object { $_.Name -match "Microsoft.Exchange.Management.PowerShell" })) {
             throw "The Microsoft.Exchange.Management.PowerShell snapin is required to use this function."
@@ -44,7 +44,7 @@ function Set-ExchangeCertificate {
         $OldCertThumbprint = ''
         $OldCertSubject = ''
         $OldCertExpire = ''
-        $ExchangeCerts = Get-ExchangeCertificate 
+        $ExchangeCerts = Get-ExchangeCertificate
         $ExchangeCerts | ForEach-Object {
             $CertServices = $_.Services -split ', '
             $ServicesDiff = Compare-Object -ReferenceObject $ExchangeServices -DifferenceObject $CertServices
@@ -95,51 +95,11 @@ function Set-ExchangeCertificate {
         if (($NewCertInstalled) -and ('IIS' -in $ExchangeServices)) {
             $TempFile = New-TemporaryFile
             $IISCommand = (Get-Command 'iisreset.exe').Path
-            Start-Process -FilePath $IISCommand -ArgumentList '/RESTART' -NoNewWindow -RedirectStandardOutput $TempFile -Wait 
+            Start-Process -FilePath $IISCommand -ArgumentList '/RESTART' -NoNewWindow -RedirectStandardOutput $TempFile -Wait
             Get-Content $TempFile | Write-Host
             Remove-Item $TempFile
         }
 
     }
 
-
-
-
-
-    <#
-    .SYNOPSIS
-        Configure Exchange service to use the specified certificate.
-
-    .DESCRIPTION
-        Intended to be used with the output from Posh-ACME's New-PACertificate or Submit-Renewal.
-
-    .PARAMETER CertThumbprint
-        Thumbprint/Fingerprint for the certificate to configure.
-
-    .PARAMETER PfxFile
-        Path to a PFX containing a certificate and private key. Not required if the certificate is already in the local system's Personal certificate store.
-
-    .PARAMETER PfxPass
-        The export password for the specified PfxFile parameter. Not required if the Pfx does not require an export password.
-
-    .PARAMETER ExchangeServices
-        The name of the Exchange services to configure. Defaults to 'IIS,SMTP'.
-
-    .PARAMETER RemoveOldCert
-        If specified, the old certificate associated with RDP will be deleted from the local system's Personal certificate store. Ignored if the old certificate has already been removed or otherwise can't be found.
-
-    .EXAMPLE
-        New-PACertificate site1.example.com | Set-ExchangeCertificate
-
-        Create a new certificate and configure it for Exchange on this system.
-
-    .EXAMPLE
-        Submit-Renewal site1.example.com | Set-ExchangeCertificate
-
-        Renew a certificate and configure it for Exchange on this system.
-
-    .LINK
-        Project: https://github.com/rmbolger/Posh-ACME.Deploy
-
-    #>
 }

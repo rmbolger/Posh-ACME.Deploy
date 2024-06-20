@@ -91,46 +91,4 @@ function Set-NPSCertificate {
         }
     }
 
-<#
-.SYNOPSIS
-    Configure a NPS Network Policy to use the specified certificate for MS PEAP.
-
-.DESCRIPTION
-    Intended to be used with the output from Posh-ACME's New-PACertificate or Submit-Renewal.
-
-.PARAMETER CertThumbprint
-    Thumbprint/Fingerprint for the certificate to configure.
-
-.PARAMETER PfxFile
-    Path to a PFX containing a certificate and private key. Not required if the certificate is already in the local system's Personal certificate store.
-
-.PARAMETER PfxPass
-    The export password for the specified PfxFile parameter. Not required if the Pfx does not require an export password.
-
-.PARAMETER IASConfigPath
-    The path to the NPS config file you want to edit. Default: %SystemRoot%\System32\ias\ias.xml
-
-.PARAMETER PolicyName
-    The name of the Network Policy.
-
-.PARAMETER PolicyXPath
-    An XPath expression that returns one or more Network Policies with an msEAPConfiguration element. An example that would return all policies might be '//RadiusProfiles//Children/*[descendant::msEAPConfiguration]'. This is for advanced usage where you are updating multiple policies with the same certificate.
-
-.PARAMETER RemoveOldCert
-    If specified, the old certificate associated with the service will be deleted from the local system's Personal certificate store. Ignored if the old certificate has already been removed or otherwise can't be found.
-
-.EXAMPLE
-    New-PACertificate site1.example.com | Set-NPSCertificate -PolicyName "Secure Wireless Connections"
-
-    Create a new certificate and add it to the specified NPS Network Policy.
-
-.EXAMPLE
-    Submit-Renewal site1.example.com | Set-NPSCertificate -PolicyName "Secure Wireless Connections"
-
-    Renew a certificate and and add it to the specified NPS Network Policy.
-
-.LINK
-    Project: https://github.com/rmbolger/Posh-ACME.Deploy
-
-#>
 }

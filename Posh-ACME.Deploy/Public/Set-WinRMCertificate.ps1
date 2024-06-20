@@ -67,44 +67,4 @@ function Set-WinRMCertificate {
 
     }
 
-
-
-
-
-    <#
-    .SYNOPSIS
-        Configure a WinRM HTTPS listener to use the specified certificate.
-
-    .DESCRIPTION
-        Intended to be used with the output from Posh-ACME's New-PACertificate or Submit-Renewal.
-
-    .PARAMETER CertThumbprint
-        Thumbprint/Fingerprint for the certificate to configure.
-
-    .PARAMETER PfxFile
-        Path to a PFX containing a certificate and private key. Not required if the certificate is already in the local system's Personal certificate store.
-
-    .PARAMETER PfxPass
-        The export password for the specified PfxFile parameter. Not required if the Pfx does not require an export password.
-
-    .PARAMETER Address
-        The address value of the WinRM listener. Defaults to '*'.
-
-    .PARAMETER Transport
-        The transport of the WinRM listener. Defaults to 'HTTPS'.
-
-    .EXAMPLE
-        New-PACertificate site1.example.com | Set-WinRMCertificate
-
-        Create a new certificate and configure it for the listener on this system.
-
-    .EXAMPLE
-        Submit-Renewal site1.example.com | Set-RDSHCertificate
-
-        Renew a certificate and configure it for the listener on this system.
-
-    .LINK
-        Project: https://github.com/rmbolger/Posh-ACME.Deploy
-
-    #>
 }

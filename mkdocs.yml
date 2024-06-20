@@ -1,0 +1,84 @@
+# Project information
+site_name: Posh-ACME.Deploy
+site_url: https://docs.dvolve.net/Posh-ACME.Deploy
+site_author: "Ryan Bolger"
+site_description: "Documentation for the Posh-ACME.Deploy PowerShell module"
+site_dir: ..\Posh-ACME.Deploy.docs\docs
+
+# Repository
+repo_name: rmbolger/Posh-ACME.Deploy
+repo_url: https://github.com/rmbolger/Posh-ACME.Deploy
+edit_uri: edit/main/docs/
+
+# Copyright
+copyright: "Copyright &copy; 2022 Ryan Bolger"
+
+# Configuration
+theme:
+  # https://squidfunk.github.io/mkdocs-material/
+  name: material
+
+  # Don't include MkDocs' JavaScript
+  include_search_page: false
+  search_index_only: true
+
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.footer
+    - content.code.copy
+    - content.action.edit
+    - content.action.view
+
+  icon:
+    logo: simple/powershell
+    repo: fontawesome/brands/github
+
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/weather-night
+        name: Switch to light mode
+
+# Plugins
+plugins:
+  - search
+  # Using awesome-pages for semi-auto sub-sections until this issue is resolved
+  # https://github.com/mkdocs/mkdocs/issues/714
+  - awesome-pages
+  - social
+
+# Customization
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/rmbolger
+    - icon: fontawesome/brands/mastodon
+      link: https://mastodon.social/@rmbolger
+    - icon: fontawesome/brands/linkedin
+      link: https://linkedin.com/in/rmbolger/
+  version:
+    provider: mike
+
+# Extensions
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - toc:
+      permalink: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - attr_list

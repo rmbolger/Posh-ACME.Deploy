@@ -22,7 +22,7 @@ function Set-RASSTPCertificate {
     }
 
     Process {
-    
+
         # surface exceptions without terminating the whole pipeline
         trap { $PSCmdlet.WriteError($PSItem); return }
 
@@ -54,37 +54,4 @@ function Set-RASSTPCertificate {
 
     }
 
-    <#
-    .SYNOPSIS
-        Configure Remote Access SSTP service to use the specified certificate.
-
-    .DESCRIPTION
-        Intended to be used with the output from Posh-ACME's New-PACertificate or Submit-Renewal.
-
-    .PARAMETER CertThumbprint
-        Thumbprint/Fingerprint for the certificate to configure.
-
-    .PARAMETER PfxFile
-        Path to a PFX containing a certificate and private key. Not required if the certificate is already in the local system's Personal certificate store.
-
-    .PARAMETER PfxPass
-        The export password for the specified PfxFile parameter. Not required if the Pfx does not require an export password.
-
-    .PARAMETER RemoveOldCert
-        If specified, the old certificate associated with Remote Access SSTP will be deleted from the local system's Personal certificate store. Ignored if the old certificate has already been removed or otherwise can't be found.
-
-    .EXAMPLE
-        New-PACertificate vpn.example.com | Set-RASSTPCertificate
-
-        Create a new certificate and configure it for Remote Access SSTP on this system.
-
-    .EXAMPLE
-        Submit-Renewal vpn.example.com | Set-RASSTPCertificate
-
-        Renew a certificate and configure it for Remote Access SSTP on this system.
-
-    .LINK
-        Project: https://github.com/rmbolger/Posh-ACME.Deploy
-
-    #>
 }
