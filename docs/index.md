@@ -61,7 +61,7 @@ if ($cert = Submit-Renewal) {
 
 `Submit-Renewal` only returns a certificate object when it successfully renews the certificate. So you generally run it 1-2 times per day and it doesn't do anything until the renewal window has been reached. The `-RemoveOldCert` parameter will delete the previous certificate from the Windows certificate store after it successfully imports and configures the new one.
 
-The rest of the functions in this module work very similarly. Check the associated parameters using `Get-Help <function>` for details. If you forget which functions are available, you can list them with `Get-Command -Module Posh-ACME.Deploy`.
+The rest of the functions in this module work very similarly. Check the associated parameters using `Get-Help <function>` for details. Additional documentation can be found [here](https://docs.dvolve.net/Posh-ACME.Deploy/)
 
 ## Requirements and Platform Support
 
