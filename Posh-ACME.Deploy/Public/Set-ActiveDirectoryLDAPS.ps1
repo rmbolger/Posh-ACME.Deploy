@@ -8,7 +8,7 @@ function Set-ActiveDirectoryLDAPS {
         [string]$PfxFile,
         [Parameter(Position=2,ValueFromPipelineByPropertyName)]
         [securestring]$PfxPass,       
-        [switch]$RemoveOldCert # Not used, included due to spec.
+        [switch]$RemoveOldCert
     )
 
     Process {
@@ -30,6 +30,13 @@ function Set-ActiveDirectoryLDAPS {
         $dse = [adsi]'LDAP://localhost/rootDSE'
         [void]$dse.Properties['renewServerCertificate'].Add(1)
         $dse.CommitChanges()        
+    
+        if ($RemoveOldCert) {
+            Get-ChildItem $NtdsCertStore | Select -Expand Name | ForEach-Object {
+                if ($_ -notlike "*$sig*") {
+                    Remove-Item Registry::$_
+                }
+            }
+        }
     }
-
 }
