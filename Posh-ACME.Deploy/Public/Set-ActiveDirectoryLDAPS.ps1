@@ -33,7 +33,7 @@ function Set-ActiveDirectoryLDAPS {
     
         if ($RemoveOldCert) {
             Get-ChildItem $NtdsCertStore | Select -Expand Name | ForEach-Object {
-                if ($_ -notlike "*$sig*") {
+                if ($_ -notlike "*$CertThumbprint*") {
                     Remove-Item Registry::$_
                 }
             }
