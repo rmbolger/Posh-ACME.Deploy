@@ -44,6 +44,10 @@ function Set-IISCertificate {
             }
         }
 
+        # The Microsoft.Web.Administration.SslFlags enum is not loaded until we actually
+        # make a function call from the module. So do that.
+        $null = Get-IISSite
+
         # build a map of switches to their corresponding SslFlags enum value
         $switchMap = @{
             'RequireSNI' = [Microsoft.Web.Administration.SslFlags]::Sni
@@ -53,8 +57,18 @@ function Set-IISCertificate {
             'DisableTLS13' = [Microsoft.Web.Administration.SslFlags]::DisableTLS13
             'DisableLegacyTLS' = [Microsoft.Web.Administration.SslFlags]::DisableLegacyTLS
         }
-        $psb = $PSBoundParameters
 
+        # Different versions of Windows/IIS have different supported flags. So older OSes
+        # might have fewer flags in the enum than newer ones. We're going to remove any
+        # that got set to $null because they don't exist for the current OS.
+        foreach ($key in @($switchMap.Keys)) {
+            if (-not $switchMap[$key]) {
+                Write-Debug "$key removed from supported SslFlags map because it had no matching value in the enum on this OS"
+                $switchMap.Remove($key)
+            }
+        }
+
+        $psb = $PSBoundParameters
     }
 
     Process {
