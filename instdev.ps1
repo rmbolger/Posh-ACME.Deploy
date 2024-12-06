@@ -1,14 +1,12 @@
 #Requires -Version 5.1
 
 # set the user module path based on edition and platform
-if ('PSEdition' -notin $PSVersionTable.Keys -or $PSVersionTable.PSEdition -eq 'Desktop') {
+if ($PSVersionTable.PSEdition -eq 'Desktop') {
     $installpath = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'WindowsPowerShell\Modules'
+} elseif ($IsWindows) {
+    $installpath = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'PowerShell\Modules'
 } else {
-    if ($IsWindows) {
-        $installpath = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'PowerShell\Modules'
-    } else {
-        $installpath = Join-Path ([Environment]::GetFolderPath('MyDocuments')) '.local/share/powershell/Modules'
-    }
+    $installpath = Join-Path $env:HOME '.local/share/powershell/Modules'
 }
 
 # deal with execution policy on Windows
@@ -26,6 +24,10 @@ New-Item -ItemType Directory -Force -Path $installpath | out-null
 
 if ([String]::IsNullOrWhiteSpace($PSScriptRoot)) {
 
+    if ([String]::IsNullOrWhiteSpace($remoteBranch)) {
+        $remoteBranch = 'main'
+    }
+
     # GitHub now requires TLS 1.2
     # https://blog.github.com/2018-02-23-weak-cryptographic-standards-removed/
     $currentMaxTls = [Math]::Max([Net.ServicePointManager]::SecurityProtocol.value__,[Net.SecurityProtocolType]::Tls.value__)
@@ -35,7 +37,7 @@ if ([String]::IsNullOrWhiteSpace($PSScriptRoot)) {
     }
 
     # likely running from online, so download
-    $url = 'https://github.com/rmbolger/Posh-ACME.Deploy/archive/main.zip'
+    $url = "https://github.com/rmbolger/Posh-ACME.Deploy/archive/$remoteBranch.zip"
     Write-Host "Downloading latest version of Posh-ACME.Deploy from $url" -ForegroundColor Cyan
     $file = Join-Path ([system.io.path]::GetTempPath()) 'Posh-ACME.Deploy.zip'
     $webclient = New-Object System.Net.WebClient
@@ -50,8 +52,8 @@ if ([String]::IsNullOrWhiteSpace($PSScriptRoot)) {
     Write-Host "Removing any old copy" -ForegroundColor Cyan
     Remove-Item "$installpath\Posh-ACME.Deploy" -Recurse -Force -EA Ignore
     Write-Host "Renaming folder" -ForegroundColor Cyan
-    Copy-Item "$installpath\Posh-ACME.Deploy-main\Posh-ACME.Deploy" $installpath -Recurse -Force -EA Continue
-    Remove-Item "$installpath\Posh-ACME.Deploy-main" -recurse -confirm:$false
+    Copy-Item "$installpath\Posh-ACME.Deploy-$remoteBranch\Posh-ACME.Deploy" $installpath -Recurse -Force -EA Continue
+    Remove-Item "$installpath\Posh-ACME.Deploy-$remoteBranch" -Recurse -Force
     Import-Module -Name Posh-ACME.Deploy -Force
 } else {
     # running locally
