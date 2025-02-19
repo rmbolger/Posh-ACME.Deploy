@@ -1,3 +1,7 @@
+## 2.0.1 (2025-02-19)
+
+* Fix TypeNotFound error in Set-IISCertificate for SslFlags enum (#31)
+
 ## 2.0.0 (2024-06-20)
 
 ### Enhancements
