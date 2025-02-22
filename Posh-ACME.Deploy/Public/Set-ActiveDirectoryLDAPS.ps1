@@ -18,25 +18,29 @@ function Set-ActiveDirectoryLDAPS {
 
         $CertThumbprint = Confirm-CertInstall @PSBoundParameters
 
-        # Copy cert from local store to NTDS Store
         $LocalCertStore = 'HKLM:/Software/Microsoft/SystemCertificates/My/Certificates'
+
+        # Make sure the NTDS store exists
         $NtdsCertStore = 'HKLM:/Software/Microsoft/Cryptography/Services/NTDS/SystemCertificates/My/Certificates'
         if (-Not (Test-Path $NtdsCertStore)) {
 	        $null = New-Item $NtdsCertStore -Force
         }
+
+        # Look for the old cert thumbprint
+        $oldThumbprint = Get-ChildItem $NtdsCertStore | Select-Object -First 1 | Select-Object -Expand PSChildName
+
+        # Copy cert from local store to NTDS Store
         Copy-Item -Path "$LocalCertStore/$CertThumbprint" -Destination $NtdsCertStore
+
+        # Remove old copies if necessary
+        if ($RemoveOldCert -and $oldThumbprint) {
+            Get-ChildItem $NtdsCertStore | Where-Object { $_.PSChildName -eq $oldThumbprint } | Remove-Item
+            Get-ChildItem $LocalCertStore | Where-Object { $_.PSChildName -eq $oldThumbprint } | Remove-Item
+        }
 
         # Command AD to update.
         $dse = [adsi]'LDAP://localhost/rootDSE'
         [void]$dse.Properties['renewServerCertificate'].Add(1)
         $dse.CommitChanges()
-
-        if ($RemoveOldCert) {
-            Get-ChildItem $NtdsCertStore | Select -Expand Name | ForEach-Object {
-                if ($_ -notlike "*$CertThumbprint*") {
-                    Remove-Item Registry::$_
-                }
-            }
-        }
     }
 }
