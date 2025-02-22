@@ -2,6 +2,145 @@
 <helpItems schema="maml" xmlns="http://msh">
   <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10" xmlns:MSHelp="http://msdn.microsoft.com/mshelp">
     <command:details>
+      <command:name>Set-ActiveDirectoryLDAPS</command:name>
+      <command:verb>Set</command:verb>
+      <command:noun>ActiveDirectoryLDAPS</command:noun>
+      <maml:description>
+        <maml:para>Configure Active Directory Domain Services (ADDS) certificate.</maml:para>
+      </maml:description>
+    </command:details>
+    <maml:description>
+      <maml:para>In cases where ADDS does not automatically pick up the LDAPS certificate from the Local Computer cert store, it can be necessary to explicitly import the cert into the NTDS Service store. Intended to be used with the output from Posh-ACME's New-PACertificate or Submit-Renewal.</maml:para>
+      <maml:para>This requires elevated/admin access on the domain controller.</maml:para>
+    </maml:description>
+    <command:syntax>
+      <command:syntaxItem>
+        <maml:name>Set-ActiveDirectoryLDAPS</maml:name>
+        <command:parameter required="false" variableLength="true" globbing="false" pipelineInput="True (ByPropertyName)" position="0" aliases="Thumbprint">
+          <maml:name>CertThumbprint</maml:name>
+          <maml:description>
+            <maml:para>Thumbprint/Fingerprint for the certificate to configure.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true" variableLength="false">String</command:parameterValue>
+          <dev:type>
+            <maml:name>String</maml:name>
+            <maml:uri />
+          </dev:type>
+          <dev:defaultValue>None</dev:defaultValue>
+        </command:parameter>
+        <command:parameter required="false" variableLength="true" globbing="false" pipelineInput="True (ByPropertyName)" position="1" aliases="none">
+          <maml:name>PfxFile</maml:name>
+          <maml:description>
+            <maml:para>Path to a PFX containing a certificate and private key. Not required if the certificate is already in the local system's Personal certificate store.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true" variableLength="false">String</command:parameterValue>
+          <dev:type>
+            <maml:name>String</maml:name>
+            <maml:uri />
+          </dev:type>
+          <dev:defaultValue>None</dev:defaultValue>
+        </command:parameter>
+        <command:parameter required="false" variableLength="true" globbing="false" pipelineInput="True (ByPropertyName)" position="2" aliases="none">
+          <maml:name>PfxPass</maml:name>
+          <maml:description>
+            <maml:para>The export password for the specified PfxFile parameter. Not required if the Pfx does not require an export password.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true" variableLength="false">SecureString</command:parameterValue>
+          <dev:type>
+            <maml:name>SecureString</maml:name>
+            <maml:uri />
+          </dev:type>
+          <dev:defaultValue>None</dev:defaultValue>
+        </command:parameter>
+        <command:parameter required="false" variableLength="true" globbing="false" pipelineInput="False" position="named" aliases="none">
+          <maml:name>RemoveOldCert</maml:name>
+          <maml:description>
+            <maml:para>If specified, the old certificate will be deleted from the local system's Personal certificate store. Ignored if the old certificate has already been removed or otherwise can't be found.</maml:para>
+          </maml:description>
+          <dev:type>
+            <maml:name>SwitchParameter</maml:name>
+            <maml:uri />
+          </dev:type>
+          <dev:defaultValue>False</dev:defaultValue>
+        </command:parameter>
+      </command:syntaxItem>
+    </command:syntax>
+    <command:parameters>
+      <command:parameter required="false" variableLength="true" globbing="false" pipelineInput="True (ByPropertyName)" position="0" aliases="Thumbprint">
+        <maml:name>CertThumbprint</maml:name>
+        <maml:description>
+          <maml:para>Thumbprint/Fingerprint for the certificate to configure.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true" variableLength="false">String</command:parameterValue>
+        <dev:type>
+          <maml:name>String</maml:name>
+          <maml:uri />
+        </dev:type>
+        <dev:defaultValue>None</dev:defaultValue>
+      </command:parameter>
+      <command:parameter required="false" variableLength="true" globbing="false" pipelineInput="True (ByPropertyName)" position="1" aliases="none">
+        <maml:name>PfxFile</maml:name>
+        <maml:description>
+          <maml:para>Path to a PFX containing a certificate and private key. Not required if the certificate is already in the local system's Personal certificate store.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true" variableLength="false">String</command:parameterValue>
+        <dev:type>
+          <maml:name>String</maml:name>
+          <maml:uri />
+        </dev:type>
+        <dev:defaultValue>None</dev:defaultValue>
+      </command:parameter>
+      <command:parameter required="false" variableLength="true" globbing="false" pipelineInput="True (ByPropertyName)" position="2" aliases="none">
+        <maml:name>PfxPass</maml:name>
+        <maml:description>
+          <maml:para>The export password for the specified PfxFile parameter. Not required if the Pfx does not require an export password.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true" variableLength="false">SecureString</command:parameterValue>
+        <dev:type>
+          <maml:name>SecureString</maml:name>
+          <maml:uri />
+        </dev:type>
+        <dev:defaultValue>None</dev:defaultValue>
+      </command:parameter>
+      <command:parameter required="false" variableLength="true" globbing="false" pipelineInput="False" position="named" aliases="none">
+        <maml:name>RemoveOldCert</maml:name>
+        <maml:description>
+          <maml:para>If specified, the old certificate will be deleted from the local system's Personal certificate store. Ignored if the old certificate has already been removed or otherwise can't be found.</maml:para>
+        </maml:description>
+        <command:parameterValue required="false" variableLength="false">SwitchParameter</command:parameterValue>
+        <dev:type>
+          <maml:name>SwitchParameter</maml:name>
+          <maml:uri />
+        </dev:type>
+        <dev:defaultValue>False</dev:defaultValue>
+      </command:parameter>
+    </command:parameters>
+    <command:inputTypes />
+    <command:returnValues />
+    <maml:alertSet>
+      <maml:alert />
+    </maml:alertSet>
+    <command:examples>
+      <command:example>
+        <maml:title>-------------------------- EXAMPLE 1 --------------------------</maml:title>
+        <dev:code>$dc = Get-ADDomainController -Discover
+$domains = $dc.HostName, $dc.Domain
+New-PACertificate $domains | Set-ActiveDirectoryLDAPS -RemoveOldCert</dev:code>
+        <dev:remarks>
+          <maml:para>Create a new certificate for the DC and domain's FQDNs and add configure Active Directory to use it for LDAPS.</maml:para>
+          <maml:para></maml:para>
+        </dev:remarks>
+      </command:example>
+    </command:examples>
+    <command:relatedLinks>
+      <maml:navigationLink>
+        <maml:linkText>Online Version:</maml:linkText>
+        <maml:uri>https://docs.dvolve.net/Posh-ACME.Deploy/v2/Functions/Set-ActiveDirectoryLDAPS/</maml:uri>
+      </maml:navigationLink>
+    </command:relatedLinks>
+  </command:command>
+  <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10" xmlns:MSHelp="http://msdn.microsoft.com/mshelp">
+    <command:details>
       <command:name>Set-ExchangeCertificate</command:name>
       <command:verb>Set</command:verb>
       <command:noun>ExchangeCertificate</command:noun>
