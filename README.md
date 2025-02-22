@@ -12,6 +12,7 @@ A Collection of certificate deployment functions intended for use with [Posh-ACM
 - Exchange (tested on 2019)
 - [Network Policy Server (NPS)](https://docs.microsoft.com/en-us/windows-server/networking/technologies/nps/nps-top)
 - Remote Access SSTP
+- Power Bi Reporting Services
 
 ## Installation (Stable)
 
