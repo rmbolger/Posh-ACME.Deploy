@@ -28,7 +28,9 @@ function Set-ActiveDirectoryLDAPS {
         }
 
         # Look for the old cert thumbprint
-        $oldThumbprint = Get-ChildItem $NtdsCertStore | Select-Object -First 1 | Select-Object -Expand PSChildName
+        $oldThumbprint = Get-ChildItem $NtdsCertStore |
+            Where-Object { $_.PSChildName -ne $CertThumbprint } |
+            Select-Object -First 1 -Expand PSChildName
 
         # Copy cert from local store to NTDS Store
         Write-Verbose "Copying cert with thumbprint $CertThumbprint to NTDS cert store."
