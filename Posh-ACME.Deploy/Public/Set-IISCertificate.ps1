@@ -18,7 +18,8 @@ function Set-IISCertificate {
         [switch]$DisableQUIC,
         [switch]$DisableTLS13,
         [switch]$DisableLegacyTLS,
-        [switch]$RemoveOldCert
+        [switch]$RemoveOldCert,
+        [switch]$Force
     )
 
     Begin {
@@ -36,17 +37,20 @@ function Set-IISCertificate {
                 try { throw "The IISAdministration module version 1.1.0.0 or newer is required to use this function. https://blogs.iis.net/iisteam/introducing-iisadministration-in-the-powershell-gallery" }
                 catch { $PSCmdlet.ThrowTerminatingError($_) }
             } else {
+                # This module seems to have weird caching issues with the state of
+                # IIS bindings. So make sure we Force import to prevent making decisions
+                # based on stale data.
                 if (-not $PSEdition -or $PSEdition -eq 'Desktop') {
-                    $module | Import-Module -Verbose:$false
+                    $module | Import-Module -Verbose:$false -Force
                 } else {
-                    $module | Import-Module -UseWindowsPowerShell -Verbose:$false
+                    $module | Import-Module -UseWindowsPowerShell -Verbose:$false -Force
                 }
             }
         }
 
         # The Microsoft.Web.Administration.SslFlags enum is not loaded until we actually
         # make a function call from the module. So do that.
-        $null = Get-IISSite
+        $null = Get-IISSite | Get-IISSiteBinding
 
         # build a map of switches to their corresponding SslFlags enum value
         $switchMap = @{
@@ -77,6 +81,7 @@ function Set-IISCertificate {
         trap { $PSCmdlet.WriteError($PSItem); return }
 
         $CertThumbprint = Confirm-CertInstall @PSBoundParameters
+        Write-Debug "new thumbprint $CertThumbprint"
 
         # verify the site exists
         if (-not (Get-IISSite -Name $SiteName)) {
@@ -100,7 +105,11 @@ function Set-IISCertificate {
             if ($binding) {
 
                 # grab the old/current thumbprint
-                $oldThumb = [BitConverter]::ToString($binding.CertificateHash).Replace('-','')
+                $oldThumb = ''
+                try {
+                    $oldThumb = [BitConverter]::ToString($binding.CertificateHash).Replace('-','')
+                } catch {}
+                Write-Debug "old thumbprint $oldThumb for $SiteName"
 
                 # sslFlags is a bitwise combination of values from the [Microsoft.Web.Administration.SslFlags]
                 # enum. It has added new feature flags over the years between Server 2016/2019/2022 and will
@@ -159,6 +168,9 @@ function Set-IISCertificate {
                     SslFlag = $newFlags
                     CertificateThumbprint = $CertThumbprint
                     CertStoreLocation = 'Cert:\LocalMachine\My'
+                }
+                if ($Force) {
+                    $newBindingParams.Force = $true
                 }
                 Write-Verbose "Adding IIS site binding for $bindMatch"
                 New-IISSiteBinding @newBindingParams

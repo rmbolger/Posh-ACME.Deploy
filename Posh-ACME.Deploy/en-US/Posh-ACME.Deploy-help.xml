@@ -416,6 +416,17 @@ New-PACertificate $domains | Set-ActiveDirectoryLDAPS -RemoveOldCert</dev:code>
           <dev:defaultValue>False</dev:defaultValue>
         </command:parameter>
         <command:parameter required="false" variableLength="true" globbing="false" pipelineInput="False" position="named" aliases="none">
+          <maml:name>Force</maml:name>
+          <maml:description>
+            <maml:para>If specified, the -Force switch will be passed through to New-IISSiteBinding which should only be necessary if there are multiple Sites using the same binding.</maml:para>
+          </maml:description>
+          <dev:type>
+            <maml:name>SwitchParameter</maml:name>
+            <maml:uri />
+          </dev:type>
+          <dev:defaultValue>False</dev:defaultValue>
+        </command:parameter>
+        <command:parameter required="false" variableLength="true" globbing="false" pipelineInput="False" position="named" aliases="none">
           <maml:name>HostHeader</maml:name>
           <maml:description>
             <maml:para>The "Host name" value for the site binding. If empty, this binding will respond to all names. You can also pass an array of names to create a binding for each name in the array.</maml:para>
@@ -552,6 +563,18 @@ New-PACertificate $domains | Set-ActiveDirectoryLDAPS -RemoveOldCert</dev:code>
         <maml:name>DisableTLS13</maml:name>
         <maml:description>
           <maml:para>If specified, the "Disable TLS 1.3 over TCP" box will be checked for the site binding.</maml:para>
+        </maml:description>
+        <command:parameterValue required="false" variableLength="false">SwitchParameter</command:parameterValue>
+        <dev:type>
+          <maml:name>SwitchParameter</maml:name>
+          <maml:uri />
+        </dev:type>
+        <dev:defaultValue>False</dev:defaultValue>
+      </command:parameter>
+      <command:parameter required="false" variableLength="true" globbing="false" pipelineInput="False" position="named" aliases="none">
+        <maml:name>Force</maml:name>
+        <maml:description>
+          <maml:para>If specified, the -Force switch will be passed through to New-IISSiteBinding which should only be necessary if there are multiple Sites using the same binding.</maml:para>
         </maml:description>
         <command:parameterValue required="false" variableLength="false">SwitchParameter</command:parameterValue>
         <dev:type>

@@ -17,7 +17,7 @@ Configure RD Session Host service to use the specified certificate.
 Set-IISCertificate [[-CertThumbprint] <String>] [[-PfxFile] <String>] [[-PfxPass] <SecureString>]
  [-SiteName <String>] [-Port <UInt32>] [-IPAddress <String>] [-HostHeader <String[]>] [-RequireSNI]
  [-DisableHTTP2] [-DisableOCSPStapling] [-DisableQUIC] [-DisableTLS13] [-DisableLegacyTLS] [-RemoveOldCert]
- [<CommonParameters>]
+ [-Force] [<CommonParameters>]
 ```
 
 ## Description
@@ -134,6 +134,21 @@ Aliases:
 Required: False
 Position: Named
 Default value: False
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -Force
+If specified, the -Force switch will be passed through to New-IISSiteBinding which should only be necessary if there are multiple Sites using the same binding.
+
+```yaml
+Type: SwitchParameter
+Parameter Sets: (All)
+Aliases:
+
+Required: False
+Position: Named
+Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False
 ```
