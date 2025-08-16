@@ -1,7 +1,7 @@
 @{
 
 RootModule = 'Posh-ACME.Deploy.psm1'
-ModuleVersion = '2.0.1'
+ModuleVersion = '2.1.0'
 GUID = '79819e0a-30db-4742-bcc4-0c956273db51'
 Author = 'Ryan Bolger'
 Copyright = '(c) 2018 Ryan Bolger. All rights reserved.'
@@ -47,9 +47,12 @@ PrivateData = @{
 
         # ReleaseNotes of this module
         ReleaseNotes = @'
-## 2.0.1 (2025-02-19)
+## 2.1.0 (2025-08-16)
 
-* Fix TypeNotFound error in Set-IISCertificate for SslFlags enum (#31)
+* Added `Set-ActiveDirectoryLDAPS` (#30) (Thanks @DACRepair)
+* Added `-Force` flag to `Set-IISCertificate` which will pass through to the underlying `New-IISSiteBinding` call. (#36)
+  * This allows overriding errors about duplicate site bindings between sites and shouldn't be needed under most circumstances.
+* Added a workaround for `Set-IISCertificate` operating on stale IIS binding data due to caching issues in the underlying IISAdministration module.
 '@
 
     } # End of PSData hashtable

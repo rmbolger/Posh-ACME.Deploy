@@ -1,3 +1,10 @@
+## 2.1.0 (2025-08-16)
+
+* Added `Set-ActiveDirectoryLDAPS` (#30) (Thanks @DACRepair)
+* Added `-Force` flag to `Set-IISCertificate` which will pass through to the underlying `New-IISSiteBinding` call. (#36)
+  * This allows overriding errors about duplicate site bindings between sites and shouldn't be needed under most circumstances.
+* Added a workaround for `Set-IISCertificate` operating on stale IIS binding data due to caching issues in the underlying IISAdministration module.
+
 ## 2.0.1 (2025-02-19)
 
 * Fix TypeNotFound error in Set-IISCertificate for SslFlags enum (#31)
