@@ -23,6 +23,16 @@ function Set-IISCertificate {
     )
 
     Begin {
+
+        # Check if IIS is installed and if the Web Administration is installed with it.
+        if (-not (Get-Service W3SVC -ErrorAction Ignore)) {
+            try { throw "IIS is not installed." }
+            catch { $PSCmdlet.ThrowTerminatingError($_) }
+        } elseif (-not (Test-Path "$env:windir\System32\inetsrv\Microsoft.Web.Administration.dll")) {
+            try { throw "Required assembly Microsoft.Web.Administration.dll not found. Install IIS Management Scripts and Tools." }
+            catch { $PSCmdlet.ThrowTerminatingError($_) }
+        }
+
         # Make sure we have the New-IISSiteBinding function available from
         # the IISAdministration module. It needs at least version 1.1.0.0 of
         # the module.
@@ -34,18 +44,23 @@ function Set-IISCertificate {
                 Select-Object -First 1
 
             if (-not $module) {
+                # Need to install newer version of the module.
                 try { throw "The IISAdministration module version 1.1.0.0 or newer is required to use this function. https://blogs.iis.net/iisteam/introducing-iisadministration-in-the-powershell-gallery" }
                 catch { $PSCmdlet.ThrowTerminatingError($_) }
-            } else {
-                # This module seems to have weird caching issues with the state of
-                # IIS bindings. So make sure we Force import to prevent making decisions
-                # based on stale data.
-                if (-not $PSEdition -or $PSEdition -eq 'Desktop') {
-                    $module | Import-Module -Verbose:$false -Force
-                } else {
-                    $module | Import-Module -UseWindowsPowerShell -Verbose:$false -Force
-                }
+            } elseif ((Get-Module IISAdministration).Version -lt [version]'1.1.0.0') {
+                # Newer module version is installed, but old version is loaded. Request session restart.
+                try { throw "The IISAdministration module required version is available, but can't be imported because an older version already is. Please restart your PowerShell session." }
+                catch { $PSCmdlet.ThrowTerminatingError($_) }
             }
+        }
+
+        # IISAdministration seems to have weird caching issues with the state of
+        # IIS bindings. So make sure we Force import to prevent making decisions
+        # based on stale data in case it was already loaded.
+        if (-not $PSEdition -or $PSEdition -eq 'Desktop') {
+            $module | Import-Module -Verbose:$false -Force
+        } else {
+            $module | Import-Module -UseWindowsPowerShell -Verbose:$false -Force
         }
 
         # The Microsoft.Web.Administration.SslFlags enum is not loaded until we actually
